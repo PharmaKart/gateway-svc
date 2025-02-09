@@ -20,6 +20,26 @@ definitions:
       username:
         type: string
     type: object
+  handlers.Order:
+    properties:
+      customer_id:
+        type: string
+      items:
+        items:
+          $ref: '#/definitions/handlers.OrderItem'
+        type: array
+      prescription_url:
+        type: string
+    type: object
+  handlers.OrderItem:
+    properties:
+      product_id:
+        type: string
+      quantity:
+        type: integer
+    type: object
+  handlers.Product:
+    type: object
   handlers.RegisterRequest:
     properties:
       city:
@@ -49,6 +69,51 @@ definitions:
       username:
         type: string
     type: object
+  handlers.StockRequest:
+    properties:
+      quantity:
+        minimum: 0
+        type: integer
+      reason:
+        type: string
+    required:
+    - quantity
+    - reason
+    type: object
+  proto.CreateProductResponse:
+    properties:
+      description:
+        type: string
+      id:
+        type: string
+      image_url:
+        type: string
+      name:
+        type: string
+      price:
+        type: number
+      requires_prescription:
+        type: boolean
+      stock:
+        type: integer
+    type: object
+  proto.DeleteProductResponse:
+    properties:
+      message:
+        type: string
+    type: object
+  proto.GetProductResponse:
+    properties:
+      product:
+        $ref: '#/definitions/proto.Product'
+    type: object
+  proto.ListProductsResponse:
+    properties:
+      products:
+        items:
+          $ref: '#/definitions/proto.Product'
+        type: array
+    type: object
   proto.LoginResponse:
     properties:
       message:
@@ -63,6 +128,30 @@ definitions:
       user_id:
         type: string
     type: object
+  proto.PlaceOrderResponse:
+    properties:
+      order_id:
+        type: string
+      status:
+        type: string
+    type: object
+  proto.Product:
+    properties:
+      description:
+        type: string
+      id:
+        type: string
+      image_url:
+        type: string
+      name:
+        type: string
+      price:
+        type: number
+      requires_prescription:
+        type: boolean
+      stock:
+        type: integer
+    type: object
   proto.RegisterResponse:
     properties:
       message:
@@ -70,23 +159,20 @@ definitions:
       success:
         type: boolean
     type: object
+  proto.UpdateProductResponse:
+    properties:
+      message:
+        type: string
+    type: object
+  proto.UpdateStockResponse:
+    properties:
+      message:
+        type: string
+    type: object
 info:
   contact: {}
 paths:
-  /health:
-    get:
-      description: Check if the service is running
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/handlers.HealthResponse'
-      summary: Health check
-      tags:
-      - Utility
-  /login:
+  /api/v1/login:
     post:
       consumes:
       - application/json
@@ -116,7 +202,243 @@ paths:
       summary: Login
       tags:
       - Authentication
-  /register:
+  /api/v1/orders:
+    post:
+      consumes:
+      - application/json
+      description: Creates new order with the given product ID and quantity
+      parameters:
+      - description: Bearer token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Order Details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.Order'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/proto.PlaceOrderResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Place a new order
+      tags:
+      - Orders
+  /api/v1/products:
+    get:
+      consumes:
+      - application/json
+      description: Fetches a list of products
+      parameters:
+      - description: Page number
+        in: query
+        name: page
+        type: integer
+      - description: Number of items per page
+        in: query
+        name: limit
+        type: integer
+      - description: Sort by field
+        in: query
+        name: sort_by
+        type: string
+      - description: Sort order (asc/desc)
+        in: query
+        name: sort_order
+        type: string
+      - description: Filter field
+        in: query
+        name: filter
+        type: string
+      - description: Filter value
+        in: query
+        name: filter_value
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/proto.ListProductsResponse'
+      summary: Get all products
+      tags:
+      - Products
+    post:
+      consumes:
+      - multipart/form-data
+      description: Adds a new product to the inventory
+      parameters:
+      - description: Bearer token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Product Name
+        in: formData
+        name: name
+        required: true
+        type: string
+      - description: Product Description
+        in: formData
+        name: description
+        required: true
+        type: string
+      - description: Product Price
+        in: formData
+        name: price
+        required: true
+        type: number
+      - description: Stock Quantity
+        in: formData
+        name: stock
+        required: true
+        type: integer
+      - description: Requires Prescription
+        in: formData
+        name: requires_prescription
+        required: true
+        type: boolean
+      - description: Product Image
+        in: formData
+        name: image
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/proto.CreateProductResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Add a new product
+      tags:
+      - Products
+  /api/v1/products/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Deletes a product by ID
+      parameters:
+      - description: Bearer token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Product ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/proto.DeleteProductResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Delete a product
+      tags:
+      - Products
+    get:
+      consumes:
+      - application/json
+      description: Fetches a product by ID
+      parameters:
+      - description: Product ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/proto.GetProductResponse'
+      summary: Get a product
+      tags:
+      - Products
+    put:
+      consumes:
+      - application/json
+      description: Updates a product by ID
+      parameters:
+      - description: Bearer token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Product ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Product Details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.Product'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/proto.UpdateProductResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Update a product
+      tags:
+      - Products
+  /api/v1/products/{id}/stock:
+    put:
+      consumes:
+      - application/json
+      description: Updates the stock of a product by ID
+      parameters:
+      - description: Bearer token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Product ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Stock Details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.StockRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/proto.UpdateStockResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Update stock
+      tags:
+      - Products
+  /api/v1/register:
     post:
       consumes:
       - application/json
@@ -146,4 +468,17 @@ paths:
       summary: Register a new user
       tags:
       - Authentication
+  /health:
+    get:
+      description: Check if the service is running
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.HealthResponse'
+      summary: Health check
+      tags:
+      - Utility
 swagger: "2.0"

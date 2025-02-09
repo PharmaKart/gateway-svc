@@ -7,7 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func RegisterAuthRoutes(r *gin.Engine, cfg *config.Config, authClient grpc.AuthClient) {
-	r.POST("/auth/register", handlers.Register(cfg, authClient))
-	r.POST("/auth/login", handlers.Login(cfg, authClient))
+func RegisterAuthRoutes(r *gin.RouterGroup, cfg *config.Config, authClient grpc.AuthClient) {
+	r.POST("/auth/register", handlers.Register(authClient))
+	r.POST("/auth/login", handlers.Login(authClient))
 }

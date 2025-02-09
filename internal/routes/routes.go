@@ -18,9 +18,22 @@ import (
 // @license.url http://www.apache.org/licenses/LICENSE-2.0.html
 // @host localhost:8080
 // @BasePath /
-func RegisterRoutes(r *gin.Engine, cfg *config.Config, authClient grpc.AuthClient) {
+func RegisterRoutes(r *gin.Engine, cfg *config.Config, authClient grpc.AuthClient, productClient grpc.ProductClient, orderClient grpc.OrderClient, paymentClient grpc.PaymentClient, reminderClient grpc.ReminderClient) {
+	api := r.Group("/api/v1")
 	// Register auth routes
-	RegisterAuthRoutes(r, cfg, authClient)
+	RegisterAuthRoutes(api, cfg, authClient)
+
+	// Register product routes
+	RegisterProductRoutes(api, cfg, authClient, productClient)
+
+	// Register order routes
+	RegisterOrderRoutes(api, cfg, authClient, orderClient)
+
+	// Register payment routes
+	RegisterPaymentRoutes(api, cfg, authClient, paymentClient)
+
+	// Register reminder routes
+	RegisterReminderRoutes(api, cfg, authClient, reminderClient)
 
 	// Register health check route
 	r.GET("/health", handlers.HealthCheck)

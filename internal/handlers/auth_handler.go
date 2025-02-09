@@ -5,7 +5,6 @@ import (
 
 	"github.com/PharmaKart/gateway-svc/internal/grpc"
 	"github.com/PharmaKart/gateway-svc/internal/proto"
-	"github.com/PharmaKart/gateway-svc/pkg/config"
 	"github.com/PharmaKart/gateway-svc/pkg/utils"
 	"github.com/gin-gonic/gin"
 )
@@ -36,8 +35,8 @@ type RegisterRequest struct {
 // @Success 200 {object} proto.RegisterResponse
 // @Failure 400 {object} ErrorResponse
 // @Failure 500 {object} ErrorResponse
-// @Router /register [post]
-func Register(cfg *config.Config, authClient grpc.AuthClient) gin.HandlerFunc {
+// @Router /api/v1/register [post]
+func Register(authClient grpc.AuthClient) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var req RegisterRequest
 		if err := c.ShouldBindJSON(&req); err != nil {
@@ -98,8 +97,8 @@ type LoginRequest struct {
 // @Success 200 {object} proto.LoginResponse
 // @Failure 400 {object} ErrorResponse
 // @Failure 500 {object} ErrorResponse
-// @Router /login [post]
-func Login(cfg *config.Config, authClient grpc.AuthClient) gin.HandlerFunc {
+// @Router /api/v1/login [post]
+func Login(authClient grpc.AuthClient) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var req LoginRequest
 		if err := c.ShouldBindJSON(&req); err != nil {

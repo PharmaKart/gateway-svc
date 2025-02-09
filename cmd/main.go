@@ -46,6 +46,50 @@ func main() {
 	authClient := grpc.NewAuthServiceClient(authConn.Conn())
 	defer authConn.Close()
 
+	// Initialize gRPC client for product service
+	productConn, err := grpc.NewClient(cfg.ProductServiceURL)
+	if err != nil {
+		utils.Logger.Fatal("Failed to connect to product service", map[string]interface{}{
+			"error": err,
+		})
+	}
+
+	productClient := grpc.NewProductServiceClient(productConn.Conn())
+	defer productConn.Close()
+
+	// Initialize gRPC client for order service
+	orderConn, err := grpc.NewClient(cfg.OrderServiceURL)
+	if err != nil {
+		utils.Logger.Fatal("Failed to connect to order service", map[string]interface{}{
+			"error": err,
+		})
+	}
+
+	orderClient := grpc.NewOrderServiceClient(orderConn.Conn())
+	defer orderConn.Close()
+
+	// Initialize gRPC client for payment service
+	paymentConn, err := grpc.NewClient(cfg.PaymentServiceURL)
+	if err != nil {
+		utils.Logger.Fatal("Failed to connect to payment service", map[string]interface{}{
+			"error": err,
+		})
+	}
+
+	paymentClient := grpc.NewPaymentServiceClient(paymentConn.Conn())
+	defer paymentConn.Close()
+
+	// Initialize gRPC client for reminder service
+	reminderConn, err := grpc.NewClient(cfg.ReminderServiceURL)
+	if err != nil {
+		utils.Logger.Fatal("Failed to connect to reminder service", map[string]interface{}{
+			"error": err,
+		})
+	}
+
+	reminderClient := grpc.NewReminderServiceClient(reminderConn.Conn())
+	defer reminderConn.Close()
+
 	// Initialize Gin router
 	r := gin.Default()
 
@@ -53,7 +97,7 @@ func main() {
 	r.GET("/swagger/*any", SwaggerAuthMiddleware(), ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	// Register auth routes
-	routes.RegisterRoutes(r, cfg, authClient)
+	routes.RegisterRoutes(r, cfg, authClient, productClient, orderClient, paymentClient, reminderClient)
 
 	// Start server
 	utils.Info("Starting gateway service", map[string]interface{}{
