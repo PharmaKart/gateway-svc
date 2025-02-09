@@ -3,7 +3,6 @@ package routes
 import (
 	"github.com/PharmaKart/gateway-svc/internal/grpc"
 	"github.com/PharmaKart/gateway-svc/internal/handlers"
-	"github.com/PharmaKart/gateway-svc/pkg/config"
 	"github.com/gin-gonic/gin"
 )
 
@@ -18,22 +17,22 @@ import (
 // @license.url http://www.apache.org/licenses/LICENSE-2.0.html
 // @host localhost:8080
 // @BasePath /
-func RegisterRoutes(r *gin.Engine, cfg *config.Config, authClient grpc.AuthClient, productClient grpc.ProductClient, orderClient grpc.OrderClient, paymentClient grpc.PaymentClient, reminderClient grpc.ReminderClient) {
+func RegisterRoutes(r *gin.Engine, authClient grpc.AuthClient, productClient grpc.ProductClient, orderClient grpc.OrderClient, paymentClient grpc.PaymentClient, reminderClient grpc.ReminderClient) {
 	api := r.Group("/api/v1")
 	// Register auth routes
-	RegisterAuthRoutes(api, cfg, authClient)
+	RegisterAuthRoutes(api, authClient)
 
 	// Register product routes
-	RegisterProductRoutes(api, cfg, authClient, productClient)
+	RegisterProductRoutes(api, authClient, productClient)
 
 	// Register order routes
-	RegisterOrderRoutes(api, cfg, authClient, orderClient)
+	RegisterOrderRoutes(api, authClient, orderClient)
 
 	// Register payment routes
-	RegisterPaymentRoutes(api, cfg, authClient, paymentClient)
+	RegisterPaymentRoutes(api, authClient, paymentClient)
 
 	// Register reminder routes
-	RegisterReminderRoutes(api, cfg, authClient, reminderClient)
+	RegisterReminderRoutes(api, authClient, reminderClient)
 
 	// Register health check route
 	r.GET("/health", handlers.HealthCheck)

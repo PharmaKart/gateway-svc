@@ -4,11 +4,10 @@ import (
 	"github.com/PharmaKart/gateway-svc/internal/grpc"
 	"github.com/PharmaKart/gateway-svc/internal/handlers"
 	"github.com/PharmaKart/gateway-svc/internal/middleware"
-	"github.com/PharmaKart/gateway-svc/pkg/config"
 	"github.com/gin-gonic/gin"
 )
 
-func RegisterProductRoutes(r *gin.RouterGroup, cfg *config.Config, authClient grpc.AuthClient, productClient grpc.ProductClient) {
+func RegisterProductRoutes(r *gin.RouterGroup, authClient grpc.AuthClient, productClient grpc.ProductClient) {
 	r.GET("/products", handlers.GetProducts(productClient))
 	r.GET("/products/:id", handlers.GetProduct(productClient))
 

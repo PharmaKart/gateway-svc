@@ -97,7 +97,7 @@ func main() {
 	r.GET("/swagger/*any", SwaggerAuthMiddleware(), ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	// Register auth routes
-	routes.RegisterRoutes(r, cfg, authClient, productClient, orderClient, paymentClient, reminderClient)
+	routes.RegisterRoutes(r, authClient, productClient, orderClient, paymentClient, reminderClient)
 
 	// Start server
 	utils.Info("Starting gateway service", map[string]interface{}{
