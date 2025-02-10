@@ -7,6 +7,6 @@ import (
 )
 
 func RegisterAuthRoutes(r *gin.RouterGroup, authClient grpc.AuthClient) {
-	r.POST("/auth/register", handlers.Register(authClient))
-	r.POST("/auth/login", handlers.Login(authClient))
+	r.POST("/register", handlers.Register(authClient))
+	r.POST("/login", handlers.Login(authClient))
 }
