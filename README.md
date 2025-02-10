@@ -115,7 +115,7 @@ PRODUCT_SERVICE_URL=http://authentication:50052
 ORDER_SERVICE_URL=http://authentication:50053
 PAYMENT_SERVICE_URL=http://authentication:50054
 REMINDER_SERVICE_URL=http://authentication:50055
-JWT_SECRET=your-jwt-secret
+STRIPE_WEBHOOK_SECRET=whsec_your_stripe_webhook_secret
 ```
 
 ---

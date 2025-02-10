@@ -12,14 +12,27 @@ import (
 )
 
 type OrderItem struct {
-	ProductID string `json:"product_id"`
-	Quantity  int    `json:"quantity"`
+	ProductID   string `json:"product_id"`
+	ProductName string `json:"product_name"`
+	Quantity    int    `json:"quantity"`
+	Price       int    `json:"price"`
+}
+
+type OrderRequest struct {
+	CustomerId string      `form:"customer_id"`
+	Items      []OrderItem `form:"items"`
 }
 
 type Order struct {
-	CustomerId   string                `json:"customer_id"`
-	Items        []OrderItem           `json:"items"`
-	Prescription *multipart.FileHeader `form:"prescription"`
+	OrderRequest
+	Prescription *multipart.FileHeader `form:"prescription" swaggerignore:"true"`
+}
+
+// @Description Order placement request
+type SwaggerOrderRequest struct {
+	CustomerId   string      `json:"customer_id"`
+	Items        []OrderItem `json:"items"`
+	Prescription string      `json:"prescription" format:"binary"`
 }
 
 // PlaceOrder creates a new order
@@ -31,7 +44,8 @@ type Order struct {
 // @Security ApiKeyAuth
 // @Param Authorization header string true "Bearer token"
 // @Param customer_id formData string true "Customer ID"
-// @Param request body Order true "Order Details"
+// @Param items formData string true "Order Items JSON"
+// @Param prescription formData file false "Prescription Image"
 // @Success 200 {object} proto.PlaceOrderResponse
 // @Router /api/v1/orders [post]
 func PlaceOrder(orderClient grpc.OrderClient) gin.HandlerFunc {
@@ -61,7 +75,6 @@ func PlaceOrder(orderClient grpc.OrderClient) gin.HandlerFunc {
 				return
 			}
 
-			// Store URL pointer
 			prescriptionURL = &url
 		}
 
@@ -103,10 +116,29 @@ func PlaceOrder(orderClient grpc.OrderClient) gin.HandlerFunc {
 
 func GetOrder(orderClient grpc.OrderClient) gin.HandlerFunc {
 	return func(c *gin.Context) {
+		userRole, ok := c.Get("user_role")
+		var customerID string
+		if !ok {
+			c.JSON(http.StatusUnauthorized, ErrorResponse{Error: "User Role not found in token"})
+			return
+		}
+
+		userId, ok := c.Get("user_id")
+		if !ok {
+			c.JSON(http.StatusUnauthorized, ErrorResponse{Error: "User ID not found in token"})
+			return
+		}
+
+		customerID = userId.(string)
+		if userRole == "admin" {
+			customerID = "admin"
+		}
+
 		orderID := c.Param("id")
 
 		resp, err := orderClient.GetOrder(c.Request.Context(), &proto.GetOrderRequest{
-			OrderId: orderID,
+			OrderId:    orderID,
+			CustomerId: customerID,
 		})
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})

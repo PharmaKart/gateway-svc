@@ -20,21 +20,34 @@ definitions:
       username:
         type: string
     type: object
-  handlers.Order:
-    type: object
-  handlers.OrderItem:
-    properties:
-      product_id:
-        type: string
-      quantity:
-        type: integer
-    type: object
   handlers.OrderStatusRequest:
     properties:
       status:
         type: string
     type: object
   handlers.Product:
+    properties:
+      description:
+        example: Pain relief medication
+        type: string
+      name:
+        example: Paracetamol
+        type: string
+      price:
+        example: 9.99
+        type: number
+      requires_prescription:
+        example: true
+        type: boolean
+      stock:
+        example: 100
+        minimum: 0
+        type: integer
+    required:
+    - description
+    - name
+    - price
+    - stock
     type: object
   handlers.RegisterRequest:
     properties:
@@ -113,6 +126,21 @@ definitions:
       status:
         type: string
     type: object
+  proto.GetPaymentResponse:
+    properties:
+      amount:
+        type: number
+      customer_id:
+        type: string
+      order_id:
+        type: string
+      payment_id:
+        type: string
+      status:
+        type: string
+      transaction_id:
+        type: string
+    type: object
   proto.GetProductResponse:
     properties:
       product:
@@ -173,7 +201,11 @@ definitions:
     type: object
   proto.OrderItem:
     properties:
+      price:
+        type: number
       product_id:
+        type: string
+      product_name:
         type: string
       quantity:
         type: integer
@@ -182,7 +214,7 @@ definitions:
     properties:
       order_id:
         type: string
-      status:
+      payment_url:
         type: string
     type: object
   proto.Product:
@@ -366,12 +398,15 @@ paths:
         name: customer_id
         required: true
         type: string
-      - description: Order Details
-        in: body
-        name: request
+      - description: Order Items JSON
+        in: formData
+        name: items
         required: true
-        schema:
-          $ref: '#/definitions/handlers.Order'
+        type: string
+      - description: Prescription Image
+        in: formData
+        name: prescription
+        type: file
       produces:
       - application/json
       responses:
@@ -418,6 +453,62 @@ paths:
       summary: Update an order
       tags:
       - Orders
+  /api/v1/payments/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Retrieves a payment by ID
+      parameters:
+      - description: Bearer token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Payment ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/proto.GetPaymentResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Get a payment
+      tags:
+      - Payments
+  /api/v1/payments/order/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Retrieves a payment by order ID
+      parameters:
+      - description: Bearer token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Order ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/proto.GetPaymentResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Get a payment by order ID
+      tags:
+      - Payments
   /api/v1/products:
     get:
       consumes:
@@ -491,7 +582,6 @@ paths:
       - description: Requires Prescription
         in: formData
         name: requires_prescription
-        required: true
         type: boolean
       - description: Product Image
         in: formData

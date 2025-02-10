@@ -239,13 +239,17 @@ const docTemplate = `{
                         "required": true
                     },
                     {
-                        "description": "Order Details",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/handlers.Order"
-                        }
+                        "type": "string",
+                        "description": "Order Items JSON",
+                        "name": "items",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "file",
+                        "description": "Prescription Image",
+                        "name": "prescription",
+                        "in": "formData"
                     }
                 ],
                 "responses": {
@@ -306,6 +310,94 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/proto.UpdateOrderStatusResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/payments/order/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Retrieves a payment by order ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Payments"
+                ],
+                "summary": "Get a payment by order ID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Bearer token",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Order ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/proto.GetPaymentResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/payments/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Retrieves a payment by ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Payments"
+                ],
+                "summary": "Get a payment",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Bearer token",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Payment ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/proto.GetPaymentResponse"
                         }
                     }
                 }
@@ -428,8 +520,7 @@ const docTemplate = `{
                         "type": "boolean",
                         "description": "Requires Prescription",
                         "name": "requires_prescription",
-                        "in": "formData",
-                        "required": true
+                        "in": "formData"
                     },
                     {
                         "type": "file",
@@ -727,20 +818,6 @@ const docTemplate = `{
                 }
             }
         },
-        "handlers.Order": {
-            "type": "object"
-        },
-        "handlers.OrderItem": {
-            "type": "object",
-            "properties": {
-                "product_id": {
-                    "type": "string"
-                },
-                "quantity": {
-                    "type": "integer"
-                }
-            }
-        },
         "handlers.OrderStatusRequest": {
             "type": "object",
             "properties": {
@@ -750,7 +827,36 @@ const docTemplate = `{
             }
         },
         "handlers.Product": {
-            "type": "object"
+            "type": "object",
+            "required": [
+                "description",
+                "name",
+                "price",
+                "stock"
+            ],
+            "properties": {
+                "description": {
+                    "type": "string",
+                    "example": "Pain relief medication"
+                },
+                "name": {
+                    "type": "string",
+                    "example": "Paracetamol"
+                },
+                "price": {
+                    "type": "number",
+                    "example": 9.99
+                },
+                "requires_prescription": {
+                    "type": "boolean",
+                    "example": true
+                },
+                "stock": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "example": 100
+                }
+            }
         },
         "handlers.RegisterRequest": {
             "type": "object",
@@ -869,6 +975,29 @@ const docTemplate = `{
                 }
             }
         },
+        "proto.GetPaymentResponse": {
+            "type": "object",
+            "properties": {
+                "amount": {
+                    "type": "number"
+                },
+                "customer_id": {
+                    "type": "string"
+                },
+                "order_id": {
+                    "type": "string"
+                },
+                "payment_id": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "transaction_id": {
+                    "type": "string"
+                }
+            }
+        },
         "proto.GetProductResponse": {
             "type": "object",
             "properties": {
@@ -961,7 +1090,13 @@ const docTemplate = `{
         "proto.OrderItem": {
             "type": "object",
             "properties": {
+                "price": {
+                    "type": "number"
+                },
                 "product_id": {
+                    "type": "string"
+                },
+                "product_name": {
                     "type": "string"
                 },
                 "quantity": {
@@ -975,7 +1110,7 @@ const docTemplate = `{
                 "order_id": {
                     "type": "string"
                 },
-                "status": {
+                "payment_url": {
                     "type": "string"
                 }
             }

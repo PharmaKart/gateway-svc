@@ -14,14 +14,26 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// Product struct for request body
+type ProductRequest struct {
+	Name                 string  `json:"name" form:"name" binding:"required" example:"Paracetamol"`
+	Description          string  `json:"description" form:"description" binding:"required" example:"Pain relief medication"`
+	Price                float64 `json:"price" form:"price" binding:"required,gt=0" example:"9.99"`
+	Stock                int32   `json:"stock" form:"stock" binding:"required,gte=0" example:"100"`
+	RequiresPrescription bool    `json:"requires_prescription" form:"requires_prescription" example:"true"`
+}
+
 type Product struct {
-	Name                 string                `json:"name" form:"name" binding:"required"`
-	Description          string                `json:"description" form:"description" binding:"required"`
-	Price                float64               `json:"price" form:"price" binding:"required,gt=0"`
-	Stock                int32                 `json:"stock" form:"stock" binding:"required,gte=0"`
-	RequiresPrescription bool                  `json:"requires_prescription" form:"requires_prescription"`
-	Image                *multipart.FileHeader `form:"image" binding:"required"`
+	ProductRequest
+	Image *multipart.FileHeader `form:"image" binding:"required" swaggerignore:"true"`
+}
+
+type SwaggerProduct struct {
+	Name                 string  `json:"name" example:"Paracetamol"`
+	Description          string  `json:"description" example:"Pain relief medication"`
+	Price                float64 `json:"price" example:"9.99"`
+	Stock                int32   `json:"stock" example:"100"`
+	RequiresPrescription bool    `json:"requires_prescription" example:"true"`
+	Image                string  `json:"image" format:"binary"`
 }
 
 // CreateProduct adds a new product to the inventory
@@ -32,11 +44,11 @@ type Product struct {
 // @Produce json
 // @Security ApiKeyAuth
 // @Param Authorization header string true "Bearer token"
-// @Param name formData string true "Product Name"
-// @Param description formData string true "Product Description"
-// @Param price formData number true "Product Price"
-// @Param stock formData integer true "Stock Quantity"
-// @Param requires_prescription formData boolean true "Requires Prescription"
+// @Param name formData string true "Product Name" example:"Paracetamol"
+// @Param description formData string true "Product Description" example:"Pain relief medication"
+// @Param price formData number true "Product Price" example:"9.99"
+// @Param stock formData integer true "Stock Quantity" example:"100"
+// @Param requires_prescription formData boolean false "Requires Prescription" example:"true"
 // @Param image formData file true "Product Image"
 // @Success 200 {object} proto.CreateProductResponse
 // @Router /api/v1/products [post]

@@ -8,7 +8,7 @@ import (
 )
 
 type PaymentClient interface {
-	ProcessPayment(ctx context.Context, req *proto.ProcessPaymentRequest) (*proto.ProcessPaymentResponse, error)
+	StorePayment(ctx context.Context, req *proto.StorePaymentRequest) (*proto.StorePaymentResponse, error)
 	RefundPayment(ctx context.Context, req *proto.RefundPaymentRequest) (*proto.RefundPaymentResponse, error)
 	GetPaymentByTransactionID(ctx context.Context, req *proto.GetPaymentByTransactionIDRequest) (*proto.GetPaymentResponse, error)
 	GetPayment(ctx context.Context, req *proto.GetPaymentRequest) (*proto.GetPaymentResponse, error)
@@ -25,8 +25,8 @@ func NewPaymentServiceClient(conn *grpc.ClientConn) PaymentClient {
 	}
 }
 
-func (c *paymentClient) ProcessPayment(ctx context.Context, req *proto.ProcessPaymentRequest) (*proto.ProcessPaymentResponse, error) {
-	return c.client.ProcessPayment(ctx, req)
+func (c *paymentClient) StorePayment(ctx context.Context, req *proto.StorePaymentRequest) (*proto.StorePaymentResponse, error) {
+	return c.client.StorePayment(ctx, req)
 }
 
 func (c *paymentClient) RefundPayment(ctx context.Context, req *proto.RefundPaymentRequest) (*proto.RefundPaymentResponse, error) {
