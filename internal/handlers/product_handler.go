@@ -51,7 +51,7 @@ type SwaggerProduct struct {
 // @Param requires_prescription formData boolean false "Requires Prescription" example:"true"
 // @Param image formData file true "Product Image"
 // @Success 200 {object} proto.CreateProductResponse
-// @Router /api/v1/products [post]
+// @Router /api/v1/admin/products [post]
 func CreateProduct(productClient grpc.ProductClient) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var req Product
@@ -172,7 +172,7 @@ func GetProducts(productClient grpc.ProductClient) gin.HandlerFunc {
 // @Param id path string true "Product ID"
 // @Param request body Product true "Product Details"
 // @Success 200 {object} proto.UpdateProductResponse
-// @Router /api/v1/products/{id} [put]
+// @Router /api/v1/admin/products/{id} [put]
 func UpdateProduct(productClient grpc.ProductClient) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		productID := c.Param("id")
@@ -206,7 +206,7 @@ func UpdateProduct(productClient grpc.ProductClient) gin.HandlerFunc {
 // @Param Authorization header string true "Bearer token"
 // @Param id path string true "Product ID"
 // @Success 200 {object} proto.DeleteProductResponse
-// @Router /api/v1/products/{id} [delete]
+// @Router /api/v1/admin/products/{id} [delete]
 func DeleteProduct(productClient grpc.ProductClient) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		productID := c.Param("id")
@@ -239,7 +239,7 @@ type StockRequest struct {
 // @Param id path string true "Product ID"
 // @Param request body StockRequest true "Stock Details"
 // @Success 200 {object} proto.UpdateStockResponse
-// @Router /api/v1/products/{id}/stock [put]
+// @Router /api/v1/admin/products/{id}/stock [put]
 func UpdateStock(productClient grpc.ProductClient) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		productID := c.Param("id")
