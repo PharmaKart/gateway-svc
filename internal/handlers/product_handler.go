@@ -22,9 +22,16 @@ type ProductRequest struct {
 	RequiresPrescription bool    `json:"requires_prescription" form:"requires_prescription" example:"true"`
 }
 
+type ProductUpdate struct {
+	Name                 string  `json:"name" form:"name" binding:"required" example:"Paracetamol"`
+	Description          string  `json:"description" form:"description" binding:"required" example:"Pain relief medication"`
+	Price                float64 `json:"price" form:"price" binding:"required,gt=0" example:"9.99"`
+	RequiresPrescription bool    `json:"requires_prescription" form:"requires_prescription" example:"true"`
+}
+
 type Product struct {
 	ProductRequest
-	Image *multipart.FileHeader `form:"image" binding:"required" swaggerignore:"true"`
+	Image *multipart.FileHeader `form:"image" swaggerignore:"true"`
 }
 
 type SwaggerProduct struct {
@@ -49,7 +56,7 @@ type SwaggerProduct struct {
 // @Param price formData number true "Product Price" example:"9.99"
 // @Param stock formData integer true "Stock Quantity" example:"100"
 // @Param requires_prescription formData boolean false "Requires Prescription" example:"true"
-// @Param image formData file true "Product Image"
+// @Param image formData file false "Product Image"
 // @Success 200 {object} proto.CreateProductResponse
 // @Router /api/v1/admin/products [post]
 func CreateProduct(productClient grpc.ProductClient) gin.HandlerFunc {
@@ -60,19 +67,24 @@ func CreateProduct(productClient grpc.ProductClient) gin.HandlerFunc {
 			return
 		}
 
-		// Validate file type
-		allowedExtensions := map[string]bool{".jpg": true, ".jpeg": true, ".png": true}
-		ext := filepath.Ext(req.Image.Filename)
-		if !allowedExtensions[ext] {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid file type. Only .jpg, .jpeg, and .png are allowed"})
-			return
-		}
+		var imageURL string
 
-		// Upload image to S3
-		imageURL, err := utils.UploadImageToS3(c, "products", req.Image)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to upload image to S3: " + err.Error()})
-			return
+		if req.Image != nil {
+			// Validate file type
+			allowedExtensions := map[string]bool{".jpg": true, ".jpeg": true, ".png": true}
+			ext := filepath.Ext(req.Image.Filename)
+			if !allowedExtensions[ext] {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid file type. Only .jpg, .jpeg, and .png are allowed"})
+				return
+			}
+
+			// Upload image to S3
+			imageURLResp, err := utils.UploadImageToS3(c, "products", req.Image)
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to upload image to S3: " + err.Error()})
+				return
+			}
+			imageURL = imageURLResp
 		}
 
 		// Call the gRPC service to create product
@@ -170,7 +182,7 @@ func GetProducts(productClient grpc.ProductClient) gin.HandlerFunc {
 // @Security ApiKeyAuth
 // @Param Authorization header string true "Bearer token"
 // @Param id path string true "Product ID"
-// @Param request body Product true "Product Details"
+// @Param request body ProductUpdate true "Product Details"
 // @Success 200 {object} proto.UpdateProductResponse
 // @Router /api/v1/admin/products/{id} [put]
 func UpdateProduct(productClient grpc.ProductClient) gin.HandlerFunc {
@@ -224,8 +236,8 @@ func DeleteProduct(productClient grpc.ProductClient) gin.HandlerFunc {
 }
 
 type StockRequest struct {
-	Quantity int32  `json:"quantity" binding:"required,gte=0"`
-	Reason   string `json:"reason" binding:"required"`
+	QuantityChange int32  `json:"quantity_change" binding:"required"`
+	Reason         string `json:"reason" binding:"required"`
 }
 
 // UpdateStock updates the stock of a product by ID
@@ -251,9 +263,9 @@ func UpdateStock(productClient grpc.ProductClient) gin.HandlerFunc {
 		}
 
 		resp, err := productClient.UpdateStock(context.Background(), &proto.UpdateStockRequest{
-			ProductId: productID,
-			Quantity:  req.Quantity,
-			Reason:    req.Reason,
+			ProductId:      productID,
+			QuantityChange: req.QuantityChange,
+			Reason:         req.Reason,
 		})
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update stock: " + err.Error()})

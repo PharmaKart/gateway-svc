@@ -96,6 +96,9 @@ func main() {
 	// Set to Release mode once in production
 	gin.SetMode(gin.DebugMode)
 
+	// Set CORS headers
+	r.Use(utils.NewCors())
+
 	// Add Swagger endpoint
 	r.GET("/swagger/*any", SwaggerAuthMiddleware(), ginSwagger.WrapHandler(swaggerFiles.Handler))
 

@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"encoding/json"
+	"fmt"
 	"mime/multipart"
 	"net/http"
 	"path/filepath"
@@ -12,15 +14,13 @@ import (
 )
 
 type OrderItem struct {
-	ProductID   string `json:"product_id"`
-	ProductName string `json:"product_name"`
-	Quantity    int    `json:"quantity"`
-	Price       int    `json:"price"`
+	ProductID   string `json:"product_id" form:"product_id"`
+	ProductName string `json:"product_name" form:"product_name"`
+	Quantity    int    `json:"quantity" form:"quantity"`
 }
 
 type OrderRequest struct {
-	CustomerId string      `form:"customer_id"`
-	Items      []OrderItem `form:"items"`
+	Items []OrderItem `form:"items"`
 }
 
 type Order struct {
@@ -30,7 +30,6 @@ type Order struct {
 
 // @Description Order placement request
 type SwaggerOrderRequest struct {
-	CustomerId   string      `json:"customer_id"`
 	Items        []OrderItem `json:"items"`
 	Prescription string      `json:"prescription" format:"binary"`
 }
@@ -43,18 +42,41 @@ type SwaggerOrderRequest struct {
 // @Produce json
 // @Security ApiKeyAuth
 // @Param Authorization header string true "Bearer token"
-// @Param customer_id formData string true "Customer ID"
 // @Param items formData string true "Order Items JSON"
 // @Param prescription formData file false "Prescription Image"
 // @Success 200 {object} proto.PlaceOrderResponse
 // @Router /api/v1/orders [post]
 func PlaceOrder(orderClient grpc.OrderClient) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		var req Order
-		if err := c.ShouldBind(&req); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		customerID, ok := c.Get("user_id")
+		if !ok {
+			c.JSON(http.StatusUnauthorized, ErrorResponse{Error: "User ID not found in token"})
 			return
 		}
+
+		var req Order
+
+		// Get the items JSON string from form data
+		itemsStr := c.PostForm("items")
+		fmt.Printf("Received items string: %s\n", itemsStr)
+
+		// Create a temporary struct to unmarshal the JSON
+		var tempRequest struct {
+			Items []OrderItem `json:"items"`
+		}
+
+		// Unmarshal the JSON string into the temporary struct
+		if err := json.Unmarshal([]byte(itemsStr), &tempRequest); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to parse items: " + err.Error()})
+			return
+		}
+
+		// Assign the parsed items to req
+		req.Items = tempRequest.Items
+
+		// Handle prescription file separately
+		file, _ := c.FormFile("prescription")
+		req.Prescription = file
 
 		var prescriptionURL *string
 
@@ -82,14 +104,15 @@ func PlaceOrder(orderClient grpc.OrderClient) gin.HandlerFunc {
 		orderItems := make([]*proto.OrderItem, len(req.Items))
 		for i, item := range req.Items {
 			orderItems[i] = &proto.OrderItem{
-				ProductId: item.ProductID,
-				Quantity:  int32(item.Quantity),
+				ProductId:   item.ProductID,
+				ProductName: item.ProductName,
+				Quantity:    int32(item.Quantity),
 			}
 		}
 
 		// Call the gRPC service
 		resp, err := orderClient.PlaceOrder(c.Request.Context(), &proto.PlaceOrderRequest{
-			CustomerId:      req.CustomerId,
+			CustomerId:      customerID.(string),
 			Items:           orderItems,
 			PrescriptionUrl: prescriptionURL,
 		})

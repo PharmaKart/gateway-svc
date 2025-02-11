@@ -25,7 +25,7 @@ definitions:
       status:
         type: string
     type: object
-  handlers.Product:
+  handlers.ProductUpdate:
     properties:
       description:
         example: Pain relief medication
@@ -39,15 +39,10 @@ definitions:
       requires_prescription:
         example: true
         type: boolean
-      stock:
-        example: 100
-        minimum: 0
-        type: integer
     required:
     - description
     - name
     - price
-    - stock
     type: object
   handlers.RegisterRequest:
     properties:
@@ -80,13 +75,12 @@ definitions:
     type: object
   handlers.StockRequest:
     properties:
-      quantity:
-        minimum: 0
+      quantity_change:
         type: integer
       reason:
         type: string
     required:
-    - quantity
+    - quantity_change
     - reason
     type: object
   proto.CreateProductResponse:
@@ -344,7 +338,6 @@ paths:
       - description: Product Image
         in: formData
         name: image
-        required: true
         type: file
       produces:
       - application/json
@@ -406,7 +399,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/handlers.Product'
+          $ref: '#/definitions/handlers.ProductUpdate'
       produces:
       - application/json
       responses:
@@ -538,11 +531,6 @@ paths:
       - description: Bearer token
         in: header
         name: Authorization
-        required: true
-        type: string
-      - description: Customer ID
-        in: formData
-        name: customer_id
         required: true
         type: string
       - description: Order Items JSON

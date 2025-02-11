@@ -152,8 +152,7 @@ const docTemplate = `{
                         "type": "file",
                         "description": "Product Image",
                         "name": "image",
-                        "in": "formData",
-                        "required": true
+                        "in": "formData"
                     }
                 ],
                 "responses": {
@@ -205,7 +204,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/handlers.Product"
+                            "$ref": "#/definitions/handlers.ProductUpdate"
                         }
                     }
                 ],
@@ -455,13 +454,6 @@ const docTemplate = `{
                         "description": "Bearer token",
                         "name": "Authorization",
                         "in": "header",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Customer ID",
-                        "name": "customer_id",
-                        "in": "formData",
                         "required": true
                     },
                     {
@@ -830,13 +822,12 @@ const docTemplate = `{
                 }
             }
         },
-        "handlers.Product": {
+        "handlers.ProductUpdate": {
             "type": "object",
             "required": [
                 "description",
                 "name",
-                "price",
-                "stock"
+                "price"
             ],
             "properties": {
                 "description": {
@@ -854,11 +845,6 @@ const docTemplate = `{
                 "requires_prescription": {
                     "type": "boolean",
                     "example": true
-                },
-                "stock": {
-                    "type": "integer",
-                    "minimum": 0,
-                    "example": 100
                 }
             }
         },
@@ -909,13 +895,12 @@ const docTemplate = `{
         "handlers.StockRequest": {
             "type": "object",
             "required": [
-                "quantity",
+                "quantity_change",
                 "reason"
             ],
             "properties": {
-                "quantity": {
-                    "type": "integer",
-                    "minimum": 0
+                "quantity_change": {
+                    "type": "integer"
                 },
                 "reason": {
                     "type": "string"
