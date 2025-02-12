@@ -19,9 +19,10 @@ type Config struct {
 
 func LoadConfig() *Config {
 	// Load environment variables from .env file
-	if err := godotenv.Load(); err != nil {
+	if err := godotenv.Overload(); err != nil {
 		log.Println("No .env file found, using system environment variables")
 	}
+
 	return &Config{
 		Port:                getEnv("PORT", "8080"),
 		AuthServiceURL:      getEnv("AUTH_SERVICE_URL", "localhost:50051"),
