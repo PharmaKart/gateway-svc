@@ -51,10 +51,10 @@ func HandleWebhook(cfg *config.Config, paymentClient grpc.PaymentClient) gin.Han
 		switch event.Type {
 		case "checkout.session.async_payment_failed":
 			handleAsyncPaymentFailed(event, paymentClient)
-		case "checkout.session.async_payment_succeeded":
-			handleAsyncPaymentSucceeded(event, paymentClient)
+		case "charge.succeeded":
+			handleAsyncPaymentSucceeded(event)
 		case "checkout.session.completed":
-			handleCheckoutSessionCompleted(event)
+			handleCheckoutSessionCompleted(event, paymentClient)
 		case "checkout.session.expired":
 			handleCheckoutSessionExpired(event, paymentClient)
 		default:
@@ -83,22 +83,57 @@ func handleAsyncPaymentFailed(event stripe.Event, paymentClient grpc.PaymentClie
 	})
 }
 
-func handleAsyncPaymentSucceeded(event stripe.Event, paymentClient grpc.PaymentClient) {
+func handleAsyncPaymentSucceeded(event stripe.Event) *string {
 	// Handle async payment succeeded
-	paymentClient.StorePayment(context.Background(), &proto.StorePaymentRequest{
-		TransactionId: event.ID,
-		OrderId:       event.Data.Object["client_reference_id"].(string),
-		CustomerId:    event.Data.Object["customer"].(string),
-		Amount:        event.Data.Object["amount_total"].(float64),
-		Status:        "succeeded",
-	})
+
+	var receiptUrl *string
+
+	receiptURL, ok := event.Data.Object["receipt_url"].(string)
+	if ok {
+		receiptUrl = &receiptURL
+		// Handle error or log missing recieptUrl
+	}
+
 	utils.Info("Handling async payment succeeded event", map[string]interface{}{
-		"event": event.ID,
+		"event":       event.ID,
+		"receipt_url": receiptUrl,
 	})
+
+	return receiptUrl
 }
 
-func handleCheckoutSessionCompleted(event stripe.Event) {
+func handleCheckoutSessionCompleted(event stripe.Event, paymentClient grpc.PaymentClient) {
+	metadata := event.Data.Object["metadata"].(map[string]interface{})
+
+	// Extract individual fields safely
+	orderID, ok := metadata["order_id"].(string)
+	if !ok {
+		// Handle error or log missing metadata
+	}
+
+	customerID, ok := metadata["customer_id"].(string)
+	if !ok {
+		// Handle error or log missing metadata
+	}
+
+	amount, ok := event.Data.Object["amount_total"].(float64)
+	if !ok {
+		// Handle error or log missing amount
+	}
+
+	status, ok := event.Data.Object["status"].(string)
+	if !ok {
+		// Handle error or log missing status
+	}
+
 	// Handle checkout session completed
+	paymentClient.StorePayment(context.Background(), &proto.StorePaymentRequest{
+		TransactionId: event.ID,
+		OrderId:       orderID,
+		CustomerId:    customerID,
+		Amount:        amount / 100,
+		Status:        status,
+	})
 	utils.Info("Handling checkout session completed event", map[string]interface{}{
 		"event": event.ID,
 	})

@@ -13,6 +13,7 @@ func RegisterOrderRoutes(r *gin.RouterGroup, authClient grpc.AuthClient, orderCl
 		r.POST("/orders", handlers.PlaceOrder(orderClient))
 		r.GET("/orders", handlers.ListCustomersOrders(orderClient))
 		r.GET("/orders/:id", handlers.GetOrder(orderClient))
+		r.PUT("/orders/:id", handlers.UpdateOrderStatus(orderClient))
 	}
 
 	admin := r.Group("/admin")
@@ -21,6 +22,6 @@ func RegisterOrderRoutes(r *gin.RouterGroup, authClient grpc.AuthClient, orderCl
 	{
 		admin.GET("/orders", handlers.ListAllOrders(orderClient))
 		admin.GET("/orders/:id", handlers.GetOrder(orderClient))
-		admin.PUT("/orders/:id/status", handlers.UpdateOrderStatus(orderClient))
+		admin.PUT("/orders/:id", handlers.UpdateOrderStatus(orderClient))
 	}
 }

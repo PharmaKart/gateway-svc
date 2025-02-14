@@ -300,6 +300,40 @@ paths:
       summary: List all orders
       tags:
       - Orders
+  /api/v1/admin/orders/{id}:
+    put:
+      consumes:
+      - application/json
+      description: Updates an order by ID
+      parameters:
+      - description: Bearer token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Order ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Order Details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.OrderStatusRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/proto.UpdateOrderStatusResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Update an order
+      tags:
+      - Orders
   /api/v1/admin/products:
     post:
       consumes:
@@ -555,10 +589,10 @@ paths:
       tags:
       - Orders
   /api/v1/orders/{id}:
-    put:
+    get:
       consumes:
       - application/json
-      description: Updates an order by ID
+      description: Retrieves an order by ID
       parameters:
       - description: Bearer token
         in: header
@@ -570,22 +604,16 @@ paths:
         name: id
         required: true
         type: string
-      - description: Order Details
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/handlers.OrderStatusRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/proto.UpdateOrderStatusResponse'
+            $ref: '#/definitions/proto.GetOrderResponse'
       security:
       - ApiKeyAuth: []
-      summary: Update an order
+      summary: Get an order
       tags:
       - Orders
   /api/v1/payments/{id}:
