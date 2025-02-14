@@ -88,6 +88,59 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/admin/orders/{id}": {
+            "put": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Updates an order by ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Orders"
+                ],
+                "summary": "Update an order",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Bearer token",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Order ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Order Details",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handlers.OrderStatusRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/proto.UpdateOrderStatusResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/admin/products": {
             "post": {
                 "security": [
@@ -481,13 +534,13 @@ const docTemplate = `{
             }
         },
         "/api/v1/orders/{id}": {
-            "put": {
+            "get": {
                 "security": [
                     {
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "Updates an order by ID",
+                "description": "Retrieves an order by ID",
                 "consumes": [
                     "application/json"
                 ],
@@ -497,7 +550,7 @@ const docTemplate = `{
                 "tags": [
                     "Orders"
                 ],
-                "summary": "Update an order",
+                "summary": "Get an order",
                 "parameters": [
                     {
                         "type": "string",
@@ -512,22 +565,13 @@ const docTemplate = `{
                         "name": "id",
                         "in": "path",
                         "required": true
-                    },
-                    {
-                        "description": "Order Details",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/handlers.OrderStatusRequest"
-                        }
                     }
                 ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/proto.UpdateOrderStatusResponse"
+                            "$ref": "#/definitions/proto.GetOrderResponse"
                         }
                     }
                 }

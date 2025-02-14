@@ -12,6 +12,12 @@ import (
 
 func AuthMiddleware(authClient grpc.AuthClient) gin.HandlerFunc {
 	return func(c *gin.Context) {
+
+		if c.Request.URL.Path == "/api/v1/payment/webhook" {
+			c.Next()
+			return
+		}
+
 		authHeader := c.GetHeader("Authorization")
 		if authHeader == "" {
 			utils.Error("Authorization header is missing", map[string]interface{}{

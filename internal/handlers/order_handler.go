@@ -136,7 +136,6 @@ func PlaceOrder(orderClient grpc.OrderClient) gin.HandlerFunc {
 // @Param id path string true "Order ID"
 // @Success 200 {object} proto.GetOrderResponse
 // @Router /api/v1/orders/{id} [get]
-
 func GetOrder(orderClient grpc.OrderClient) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		userRole, ok := c.Get("user_role")
@@ -277,9 +276,27 @@ type OrderStatusRequest struct {
 // @Param id path string true "Order ID"
 // @Param request body OrderStatusRequest true "Order Details"
 // @Success 200 {object} proto.UpdateOrderStatusResponse
-// @Router /api/v1/orders/{id} [put]
+// @Router /api/v1/admin/orders/{id} [put]
 func UpdateOrderStatus(orderClient grpc.OrderClient) gin.HandlerFunc {
 	return func(c *gin.Context) {
+		userRole, ok := c.Get("user_role")
+		var customerID string
+		if !ok {
+			c.JSON(http.StatusUnauthorized, ErrorResponse{Error: "User Role not found in token"})
+			return
+		}
+
+		userId, ok := c.Get("user_id")
+		if !ok {
+			c.JSON(http.StatusUnauthorized, ErrorResponse{Error: "User ID not found in token"})
+			return
+		}
+
+		customerID = userId.(string)
+		if userRole == "admin" {
+			customerID = "admin"
+		}
+
 		orderID := c.Param("id")
 
 		var req OrderStatusRequest
@@ -289,8 +306,9 @@ func UpdateOrderStatus(orderClient grpc.OrderClient) gin.HandlerFunc {
 		}
 
 		resp, err := orderClient.UpdateOrderStatus(c.Request.Context(), &proto.UpdateOrderStatusRequest{
-			OrderId: orderID,
-			Status:  req.Status,
+			OrderId:    orderID,
+			CustomerId: customerID,
+			Status:     req.Status,
 		})
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
