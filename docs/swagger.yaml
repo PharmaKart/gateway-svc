@@ -73,6 +73,22 @@ definitions:
       username:
         type: string
     type: object
+  handlers.ScheduleReminderRequest:
+    properties:
+      customer_id:
+        type: string
+      order_id:
+        type: string
+      product_id:
+        type: string
+      reminder_date:
+        type: string
+    required:
+    - customer_id
+    - order_id
+    - product_id
+    - reminder_date
+    type: object
   handlers.StockRequest:
     properties:
       quantity_change:
@@ -101,6 +117,11 @@ definitions:
         type: integer
     type: object
   proto.DeleteProductResponse:
+    properties:
+      message:
+        type: string
+    type: object
+  proto.DeleteReminderResponse:
     properties:
       message:
         type: string
@@ -179,6 +200,32 @@ definitions:
       total:
         type: integer
     type: object
+  proto.ListReminderLogsResponse:
+    properties:
+      limit:
+        type: integer
+      logs:
+        items:
+          $ref: '#/definitions/proto.ReminderLog'
+        type: array
+      page:
+        type: integer
+      total:
+        type: integer
+    type: object
+  proto.ListRemindersResponse:
+    properties:
+      limit:
+        type: integer
+      page:
+        type: integer
+      reminders:
+        items:
+          $ref: '#/definitions/proto.Reminder'
+        type: array
+      total:
+        type: integer
+    type: object
   proto.LoginResponse:
     properties:
       message:
@@ -235,12 +282,59 @@ definitions:
       success:
         type: boolean
     type: object
+  proto.Reminder:
+    properties:
+      created_at:
+        type: string
+      customer_id:
+        type: string
+      enabled:
+        type: boolean
+      id:
+        type: string
+      last_sent_at:
+        type: string
+      order_id:
+        type: string
+      product_id:
+        type: string
+      reminder_date:
+        type: string
+    type: object
+  proto.ReminderLog:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: string
+      order_id:
+        type: string
+      reminder_id:
+        type: string
+      status:
+        type: string
+    type: object
+  proto.ScheduleReminderResponse:
+    properties:
+      reminder_id:
+        type: string
+    type: object
+  proto.ToggleReminderResponse:
+    properties:
+      message:
+        type: string
+    type: object
   proto.UpdateOrderStatusResponse:
     properties:
       message:
         type: string
     type: object
   proto.UpdateProductResponse:
+    properties:
+      message:
+        type: string
+    type: object
+  proto.UpdateReminderResponse:
     properties:
       message:
         type: string
@@ -480,6 +574,53 @@ paths:
       summary: Update stock
       tags:
       - Products
+  /api/v1/admin/reminders:
+    get:
+      consumes:
+      - application/json
+      description: List all reminders
+      parameters:
+      - description: Bearer token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Page number
+        in: query
+        name: page
+        type: integer
+      - description: Number of items per page
+        in: query
+        name: limit
+        type: integer
+      - description: Sort by field
+        in: query
+        name: sort_by
+        type: string
+      - description: Sort order (asc/desc)
+        in: query
+        name: sort_order
+        type: string
+      - description: Filter field
+        in: query
+        name: filter
+        type: string
+      - description: Filter value
+        in: query
+        name: filter_value
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/proto.ListRemindersResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: List reminders
+      tags:
+      - Reminders
   /api/v1/login:
     post:
       consumes:
@@ -763,6 +904,226 @@ paths:
       summary: Register a new user
       tags:
       - Authentication
+  /api/v1/reminders:
+    get:
+      consumes:
+      - application/json
+      description: List all reminders for a customer
+      parameters:
+      - description: Bearer token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Customer ID
+        in: query
+        name: customer_id
+        required: true
+        type: string
+      - description: Page number
+        in: query
+        name: page
+        type: integer
+      - description: Number of items per page
+        in: query
+        name: limit
+        type: integer
+      - description: Sort by field
+        in: query
+        name: sort_by
+        type: string
+      - description: Sort order (asc/desc)
+        in: query
+        name: sort_order
+        type: string
+      - description: Filter field
+        in: query
+        name: filter
+        type: string
+      - description: Filter value
+        in: query
+        name: filter_value
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/proto.ListRemindersResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: List customer reminders
+      tags:
+      - Reminders
+    post:
+      consumes:
+      - application/json
+      description: Schedule a reminder for a customer
+      parameters:
+      - description: Bearer token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Reminder Details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.ScheduleReminderRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/proto.ScheduleReminderResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Schedule a reminder
+      tags:
+      - Reminders
+  /api/v1/reminders/{reminder_id}:
+    delete:
+      consumes:
+      - application/json
+      description: Deletes a reminder
+      parameters:
+      - description: Bearer token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Reminder ID
+        in: path
+        name: reminder_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/proto.DeleteReminderResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Delete a reminder
+      tags:
+      - Reminders
+    patch:
+      consumes:
+      - application/json
+      description: Toggles a reminder
+      parameters:
+      - description: Bearer token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Reminder ID
+        in: path
+        name: reminder_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/proto.ToggleReminderResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Toggle a reminder
+      tags:
+      - Reminders
+    put:
+      consumes:
+      - application/json
+      description: Updates a reminder
+      parameters:
+      - description: Bearer token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Reminder ID
+        in: path
+        name: reminder_id
+        required: true
+        type: string
+      - description: Reminder Details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.ScheduleReminderRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/proto.UpdateReminderResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Update a reminder
+      tags:
+      - Reminders
+  /api/v1/reminders/{reminder_id}/logs:
+    get:
+      consumes:
+      - application/json
+      description: List all reminder logs
+      parameters:
+      - description: Bearer token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Reminder ID
+        in: path
+        name: reminder_id
+        required: true
+        type: string
+      - description: Page number
+        in: query
+        name: page
+        type: integer
+      - description: Number of items per page
+        in: query
+        name: limit
+        type: integer
+      - description: Sort by field
+        in: query
+        name: sort_by
+        type: string
+      - description: Sort order (asc/desc)
+        in: query
+        name: sort_order
+        type: string
+      - description: Filter field
+        in: query
+        name: filter
+        type: string
+      - description: Filter value
+        in: query
+        name: filter_value
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/proto.ListReminderLogsResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: List reminder logs
+      tags:
+      - Reminders
   /health:
     get:
       description: Check if the service is running
