@@ -1,0 +1,57 @@
+syntax = "proto3";
+
+package auth;
+
+option go_package = "../proto";
+
+service AuthService {
+    rpc Register(RegisterRequest) returns (RegisterResponse);
+    rpc Login(LoginRequest) returns (LoginResponse);
+    rpc VerifyToken(VerifyTokenRequest) returns (VerifyTokenResponse);
+}
+
+message RegisterRequest {
+    string username = 1;
+    string email = 2;
+    string password = 3;
+    string first_name = 4;
+    string last_name = 5;
+    string phone = 6;
+    string date_of_birth = 7;
+    string street_line1 = 8;
+    string street_line2 = 9;
+    string city = 10;
+    string province = 11;
+    string postal_code = 12;
+    string country = 13;
+}
+
+message RegisterResponse {
+    bool success = 1;
+    string message = 2;
+}
+
+message LoginRequest {
+    string email = 1;
+    string username = 2;
+    string password = 3;
+}
+
+message LoginResponse {
+    bool success = 1;
+    string message = 2;
+    string token = 3;
+    string user_id = 4;
+    string role = 5; // customer or admin
+}
+
+message VerifyTokenRequest {
+    string token = 1;
+}
+
+message VerifyTokenResponse {
+    bool success = 1;
+    string message = 2;
+    string user_id = 3;
+    string role = 4;
+}

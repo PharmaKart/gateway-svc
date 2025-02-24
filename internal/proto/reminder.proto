@@ -1,0 +1,118 @@
+syntax = "proto3";
+
+package reminder;
+
+option go_package = "../proto";
+
+service ReminderService {
+    rpc ScheduleReminder(ScheduleReminderRequest) returns (ScheduleReminderResponse);
+    rpc ListReminders(ListRemindersRequest) returns (ListRemindersResponse);
+    rpc ListCustomerReminders(ListCustomerRemindersRequest) returns (ListRemindersResponse);
+    rpc UpdateReminder(UpdateReminderRequest) returns (UpdateReminderResponse);
+    rpc DeleteReminder(DeleteReminderRequest) returns (DeleteReminderResponse);
+    rpc ToggleReminder(ToggleReminderRequest) returns (ToggleReminderResponse);
+    rpc ListReminderLogs(ListReminderLogsRequest) returns (ListReminderLogsResponse);
+}
+
+message Reminder {
+    string id = 1;
+    string customer_id = 2;
+    string order_id = 3;
+    string product_id = 4;
+    string reminder_date = 5;
+    string last_sent_at = 6;
+    bool enabled = 7;
+    string created_at = 8;
+}
+
+message ReminderLog {
+    string id = 1;
+    string reminder_id = 2;
+    string order_id = 3;
+    string status = 4;
+    string created_at = 5;
+}
+
+message ScheduleReminderRequest {
+    string customer_id = 1;
+    string order_id = 2;
+    string product_id = 3;
+    string reminder_date = 4;
+}
+
+message ScheduleReminderResponse {
+    string reminder_id = 1;
+}
+
+message ListRemindersRequest {
+    int32 page = 1;
+    int32 limit = 2;
+    string sort_by = 3;
+    string sort_order = 4;
+    string filter = 5;
+    string filter_value = 6;
+}
+
+message ListRemindersResponse {
+    repeated Reminder reminders = 1;
+    int32 total = 2;
+    int32 page = 3;
+    int32 limit = 4;
+}
+
+message ListCustomerRemindersRequest {
+    string customer_id = 1;
+    int32 page = 2;
+    int32 limit = 3;
+    string sort_by = 4;
+    string sort_order = 5;
+    string filter = 6;
+    string filter_value = 7;
+}
+
+message UpdateReminderRequest {
+    string reminder_id = 1;
+    string order_id = 2;
+    string customer_id = 3;
+    string reminder_date = 4;
+}
+
+message UpdateReminderResponse {
+    string message = 1;
+}
+
+message DeleteReminderRequest {
+    string reminder_id = 1;
+    string customer_id = 2;
+}
+
+message DeleteReminderResponse {
+    string message = 1;
+}
+
+message ToggleReminderRequest {
+    string reminder_id = 1;
+    string customer_id = 2;
+}
+
+message ToggleReminderResponse {
+    string message = 1;
+}
+
+message ListReminderLogsRequest {
+    string reminder_id = 1;
+    string customer_id = 2;
+    int32 page = 3;
+    int32 limit = 4;
+    string sort_by = 5;
+    string sort_order = 6;
+    string filter = 7;
+    string filter_value = 8;
+}
+
+message ListReminderLogsResponse {
+    repeated ReminderLog logs = 1;
+    int32 total = 2;
+    int32 page = 3;
+    int32 limit = 4;
+}
