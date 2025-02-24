@@ -1,6 +1,6 @@
 # Gateway Service
 
-The **Gateway Service** is the API gateway for the Pharmakart platform. It routes incoming requests to the appropriate microservices, performs authentication checks, and provides additional features like rate limiting and logging.
+The **Gateway Service** is the API gateway for the Pharmakart backend. It routes incoming requests to the appropriate microservices, performs authentication checks, and provides additional features like rate limiting and logging.
 
 ---
 
