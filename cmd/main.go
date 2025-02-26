@@ -3,7 +3,7 @@ package main
 import (
 	"net/http"
 
-	_ "github.com/PharmaKart/gateway-svc/docs"
+	docs "github.com/PharmaKart/gateway-svc/docs"
 	"github.com/PharmaKart/gateway-svc/internal/grpc"
 	"github.com/PharmaKart/gateway-svc/internal/routes"
 	"github.com/PharmaKart/gateway-svc/pkg/config"
@@ -96,13 +96,25 @@ func main() {
 	// Set to Release mode once in production
 	gin.SetMode(gin.DebugMode)
 
+	// Add Swagger documentation
+	docs.SwaggerInfo.Title = "PharmaKart Gateway API"
+	docs.SwaggerInfo.Version = "1.0"
+	docs.SwaggerInfo.Description = "This is the API documentation for the PharmaKart Gateway Service."
+	docs.SwaggerInfo.BasePath = "/api/v1"
+
 	// Set CORS headers
 	r.Use(utils.NewCors())
 
-	// Add Swagger endpoint
-	r.GET("/swagger/*any", SwaggerAuthMiddleware(), ginSwagger.WrapHandler(swaggerFiles.Handler))
+	// Redirect /swagger to /swagger/index.html
+	r.GET("/swagger", func(c *gin.Context) {
+		c.Redirect(302, "/swagger/index.html")
+	})
 
-	// Register auth routes
+	// Add Swagger endpoint
+	r.GET("/swagger/*any", SwaggerAuthMiddleware(), ginSwagger.WrapHandler(
+		swaggerFiles.Handler,
+		ginSwagger.DefaultModelsExpandDepth(-1),
+	)) // Register auth routes
 	routes.RegisterRoutes(r, cfg, authClient, productClient, orderClient, paymentClient, reminderClient)
 
 	// Start server
