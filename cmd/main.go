@@ -100,7 +100,6 @@ func main() {
 	docs.SwaggerInfo.Title = "PharmaKart Gateway API"
 	docs.SwaggerInfo.Version = "1.0"
 	docs.SwaggerInfo.Description = "This is the API documentation for the PharmaKart Gateway Service."
-	docs.SwaggerInfo.BasePath = "/api/v1"
 
 	// Set CORS headers
 	r.Use(utils.NewCors())
