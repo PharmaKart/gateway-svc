@@ -15,6 +15,8 @@ type Config struct {
 	PaymentServiceURL   string
 	ReminderServiceURL  string
 	StripeWebhookSecret string
+	S3Bucket            string
+	AwsRegion           string
 }
 
 func LoadConfig() *Config {
@@ -31,6 +33,8 @@ func LoadConfig() *Config {
 		PaymentServiceURL:   getEnv("PAYMENT_SERVICE_URL", "localhost:50054"),
 		ReminderServiceURL:  getEnv("REMINDER_SERVICE_URL", "localhost:50055"),
 		StripeWebhookSecret: getEnv("STRIPE_WEBHOOK_SECRET", "whsec_your_stripe_webhook_secret"),
+		S3Bucket:            getEnv("S3_BUCKET_NAME", "your_s3_bucket"),
+		AwsRegion:           getEnv("AWS_REGION", "ca-central-1"),
 	}
 }
 

@@ -109,21 +109,33 @@ func handleCheckoutSessionCompleted(event stripe.Event, paymentClient grpc.Payme
 	orderID, ok := metadata["order_id"].(string)
 	if !ok {
 		// Handle error or log missing metadata
+		utils.Warn("Order ID not found in metadata", map[string]interface{}{
+			"event": event.ID,
+		})
 	}
 
 	customerID, ok := metadata["customer_id"].(string)
 	if !ok {
 		// Handle error or log missing metadata
+		utils.Warn("Customer ID not found in metadata", map[string]interface{}{
+			"event": event.ID,
+		})
 	}
 
 	amount, ok := event.Data.Object["amount_total"].(float64)
 	if !ok {
 		// Handle error or log missing amount
+		utils.Warn("Amount not found in event data", map[string]interface{}{
+			"event": event.ID,
+		})
 	}
 
 	status, ok := event.Data.Object["status"].(string)
 	if !ok {
 		// Handle error or log missing status
+		utils.Warn("Status not found in event data", map[string]interface{}{
+			"event": event.ID,
+		})
 	}
 
 	// Handle checkout session completed

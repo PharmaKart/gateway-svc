@@ -7,6 +7,10 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/PharmaKart/gateway-svc/pkg/config"
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/gin-gonic/gin"
 )
 
@@ -18,30 +22,46 @@ func GetIntQueryParam(c *gin.Context, key string, defaultValue int) int {
 	return value
 }
 
-func UploadImageToS3(c *gin.Context, bucket string, file *multipart.FileHeader) (string, error) {
-	// Open the uploaded file
-	// src, err := file.Open()
-	// if err != nil {
-	// 	return "", err
-	// }
-	// defer src.Close()
+func UploadImageToS3(c *gin.Context, cfg *config.Config, bucketFolder string, file *multipart.FileHeader) (string, error) {
+	// TODO: Add this to env variables
+	bucket := cfg.S3Bucket
+	region := cfg.AwsRegion
 
-	_ = c // Remove this line
+	// Open the uploaded file
+	src, err := file.Open()
+	if err != nil {
+		return "", err
+	}
+	defer src.Close()
 
 	// Generate a unique file name
-	fileName := fmt.Sprintf("%s/%d%s", bucket, time.Now().UnixNano(), filepath.Ext(file.Filename))
+	fileName := fmt.Sprintf("%s/%d%s", bucketFolder, time.Now().UnixNano(), filepath.Ext(file.Filename))
 
 	Info("Uploading file to S3", map[string]interface{}{
 		"file_name": fileName,
 	})
 
-	// Upload file to S3
-	// url, err := s3Client.UploadFile(c.Request.Context(), src, fileName)
-	// if err != nil {
-	// 	return "", err
-	// }
+	// Start a new S3 session
+	sess, err := session.NewSession(&aws.Config{
+		Region: aws.String(region),
+	})
+	if err != nil {
+		return "", err
+	}
 
-	url := "https://picsum.photos/500"
+	// Upload the file to S3
+	s3Service := s3.New(sess)
+
+	_, err = s3Service.PutObject(&s3.PutObjectInput{
+		Bucket: aws.String(bucket),
+		Key:    aws.String(fileName),
+		Body:   src,
+	})
+	if err != nil {
+		return "", err
+	}
+
+	url := fmt.Sprintf("https://%s.s3.%s.amazonaws.com/%s", bucket, region, fileName)
 
 	return url, nil
 }
