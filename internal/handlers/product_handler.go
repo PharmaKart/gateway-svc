@@ -8,6 +8,7 @@ import (
 
 	"github.com/PharmaKart/gateway-svc/internal/grpc"
 	"github.com/PharmaKart/gateway-svc/internal/proto"
+	"github.com/PharmaKart/gateway-svc/pkg/config"
 	"github.com/PharmaKart/gateway-svc/pkg/utils"
 
 	// "github.com/PharmaKart/gateway-svc/pkg/s3"
@@ -59,7 +60,7 @@ type SwaggerProduct struct {
 // @Param image formData file false "Product Image"
 // @Success 200 {object} proto.CreateProductResponse
 // @Router /api/v1/admin/products [post]
-func CreateProduct(productClient grpc.ProductClient) gin.HandlerFunc {
+func CreateProduct(cfg *config.Config, productClient grpc.ProductClient) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var req Product
 		if err := c.ShouldBind(&req); err != nil {
@@ -79,7 +80,7 @@ func CreateProduct(productClient grpc.ProductClient) gin.HandlerFunc {
 			}
 
 			// Upload image to S3
-			imageURLResp, err := utils.UploadImageToS3(c, "products", req.Image)
+			imageURLResp, err := utils.UploadImageToS3(c, cfg, "products", req.Image)
 			if err != nil {
 				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to upload image to S3: " + err.Error()})
 				return

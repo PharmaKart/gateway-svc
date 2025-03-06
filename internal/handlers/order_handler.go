@@ -9,6 +9,7 @@ import (
 
 	"github.com/PharmaKart/gateway-svc/internal/grpc"
 	"github.com/PharmaKart/gateway-svc/internal/proto"
+	"github.com/PharmaKart/gateway-svc/pkg/config"
 	"github.com/PharmaKart/gateway-svc/pkg/utils"
 	"github.com/gin-gonic/gin"
 )
@@ -46,7 +47,7 @@ type SwaggerOrderRequest struct {
 // @Param prescription formData file false "Prescription Image"
 // @Success 200 {object} proto.PlaceOrderResponse
 // @Router /api/v1/orders [post]
-func PlaceOrder(orderClient grpc.OrderClient) gin.HandlerFunc {
+func PlaceOrder(cfg *config.Config, orderClient grpc.OrderClient) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		customerID, ok := c.Get("user_id")
 		if !ok {
@@ -91,7 +92,7 @@ func PlaceOrder(orderClient grpc.OrderClient) gin.HandlerFunc {
 			}
 
 			// Upload prescription to S3
-			url, err := utils.UploadImageToS3(c, "prescriptions", req.Prescription)
+			url, err := utils.UploadImageToS3(c, cfg, "prescriptions", req.Prescription)
 			if err != nil {
 				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to upload image to S3: " + err.Error()})
 				return
