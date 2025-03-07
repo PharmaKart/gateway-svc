@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gateway-deployment
+  labels:
+    app: pharmakart
+spec:
+  selector:
+    matchLabels:
+      app: pharmakart
+      service: gateway
+  template:
+    metadata:
+      labels:
+        app: pharmakart
+        service: gateway
+    spec:
+      containers:
+      - name: pharmakart-gateway
+        image: ${REPOSITORY_URI}:${IMAGE_TAG}
+        resources:
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
