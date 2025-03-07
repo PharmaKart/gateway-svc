@@ -25,5 +25,5 @@ type HealthResponse struct {
 // @Error 500 {object} ErrorResponse
 // @Router /health [get]
 func HealthCheck(c *gin.Context) {
-	c.JSON(http.StatusOK, HealthResponse{Status: "ok"})
+	c.JSON(http.StatusOK, HealthResponse{Status: "good"})
 }
