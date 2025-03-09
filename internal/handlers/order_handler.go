@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"encoding/json"
-	"fmt"
 	"mime/multipart"
 	"net/http"
 	"path/filepath"
@@ -46,12 +45,18 @@ type SwaggerOrderRequest struct {
 // @Param items formData string true "Order Items JSON"
 // @Param prescription formData file false "Prescription Image"
 // @Success 200 {object} proto.PlaceOrderResponse
+// @Failure 400 {object} ErrorResponse
+// @Failure 409 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
 // @Router /api/v1/orders [post]
 func PlaceOrder(cfg *config.Config, orderClient grpc.OrderClient) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		customerID, ok := c.Get("user_id")
 		if !ok {
-			c.JSON(http.StatusUnauthorized, ErrorResponse{Error: "User ID not found in token"})
+			c.JSON(http.StatusUnauthorized, ErrorResponse{
+				Type:    "AUTH_ERROR",
+				Message: "User ID not found in token",
+			})
 			return
 		}
 
@@ -59,7 +64,6 @@ func PlaceOrder(cfg *config.Config, orderClient grpc.OrderClient) gin.HandlerFun
 
 		// Get the items JSON string from form data
 		itemsStr := c.PostForm("items")
-		fmt.Printf("Received items string: %s\n", itemsStr)
 
 		// Create a temporary struct to unmarshal the JSON
 		var tempRequest struct {
@@ -68,7 +72,11 @@ func PlaceOrder(cfg *config.Config, orderClient grpc.OrderClient) gin.HandlerFun
 
 		// Unmarshal the JSON string into the temporary struct
 		if err := json.Unmarshal([]byte(itemsStr), &tempRequest); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to parse items: " + err.Error()})
+			c.JSON(http.StatusBadRequest, ErrorResponse{
+				Type:    "VALIDATION_ERROR",
+				Message: "Invalid request format",
+				Details: map[string]string{"format": err.Error()},
+			})
 			return
 		}
 
@@ -87,14 +95,21 @@ func PlaceOrder(cfg *config.Config, orderClient grpc.OrderClient) gin.HandlerFun
 			allowedExtensions := map[string]bool{".jpg": true, ".jpeg": true, ".png": true}
 			ext := filepath.Ext(req.Prescription.Filename)
 			if !allowedExtensions[ext] {
-				c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid file type. Only .jpg, .jpeg, and .png are allowed"})
+				c.JSON(http.StatusBadRequest, ErrorResponse{
+					Type:    "VALIDATION_ERROR",
+					Message: "Invalid file format",
+					Details: map[string]string{"format": "Only JPG, JPEG, PNG files are allowed"},
+				})
 				return
 			}
 
 			// Upload prescription to S3
 			url, err := utils.UploadImageToS3(c, cfg, "prescriptions", req.Prescription)
 			if err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to upload image to S3: " + err.Error()})
+				c.JSON(http.StatusInternalServerError, ErrorResponse{
+					Type:    "INTERNAL_ERROR",
+					Message: "Failed to upload prescription",
+				})
 				return
 			}
 
@@ -118,7 +133,10 @@ func PlaceOrder(cfg *config.Config, orderClient grpc.OrderClient) gin.HandlerFun
 			PrescriptionUrl: prescriptionURL,
 		})
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			c.JSON(http.StatusInternalServerError, ErrorResponse{
+				Type:    "INTERNAL_ERROR",
+				Message: "Failed to place order",
+			})
 			return
 		}
 
@@ -142,13 +160,19 @@ func GetOrder(orderClient grpc.OrderClient) gin.HandlerFunc {
 		userRole, ok := c.Get("user_role")
 		var customerID string
 		if !ok {
-			c.JSON(http.StatusUnauthorized, ErrorResponse{Error: "User Role not found in token"})
+			c.JSON(http.StatusUnauthorized, ErrorResponse{
+				Type:    "AUTH_ERROR",
+				Message: "User Role not found in token",
+			})
 			return
 		}
 
 		userId, ok := c.Get("user_id")
 		if !ok {
-			c.JSON(http.StatusUnauthorized, ErrorResponse{Error: "User ID not found in token"})
+			c.JSON(http.StatusUnauthorized, ErrorResponse{
+				Type:    "AUTH_ERROR",
+				Message: "User ID not found in token",
+			})
 			return
 		}
 
@@ -164,7 +188,10 @@ func GetOrder(orderClient grpc.OrderClient) gin.HandlerFunc {
 			CustomerId: customerID,
 		})
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
+			c.JSON(http.StatusInternalServerError, ErrorResponse{
+				Type:    "INTERNAL_ERROR",
+				Message: "Failed to get order",
+			})
 			return
 		}
 
@@ -192,7 +219,10 @@ func ListCustomersOrders(orderClient grpc.OrderClient) gin.HandlerFunc {
 	return func(c *gin.Context) { // Get customer ID from the token
 		customerID, ok := c.Get("user_id")
 		if !ok {
-			c.JSON(http.StatusUnauthorized, ErrorResponse{Error: "User ID not found in token"})
+			c.JSON(http.StatusUnauthorized, ErrorResponse{
+				Type:    "AUTH_ERROR",
+				Message: "User ID not found in token",
+			})
 			return
 		}
 
@@ -213,7 +243,10 @@ func ListCustomersOrders(orderClient grpc.OrderClient) gin.HandlerFunc {
 			FilterValue: filterValue,
 		})
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
+			c.JSON(http.StatusInternalServerError, ErrorResponse{
+				Type:    "INTERNAL_ERROR",
+				Message: "Failed to list orders",
+			})
 			return
 		}
 
@@ -254,7 +287,10 @@ func ListAllOrders(orderClient grpc.OrderClient) gin.HandlerFunc {
 			FilterValue: filterValue,
 		})
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
+			c.JSON(http.StatusInternalServerError, ErrorResponse{
+				Type:    "INTERNAL_ERROR",
+				Message: "Failed to list orders",
+			})
 			return
 		}
 
@@ -283,13 +319,19 @@ func UpdateOrderStatus(orderClient grpc.OrderClient) gin.HandlerFunc {
 		userRole, ok := c.Get("user_role")
 		var customerID string
 		if !ok {
-			c.JSON(http.StatusUnauthorized, ErrorResponse{Error: "User Role not found in token"})
+			c.JSON(http.StatusUnauthorized, ErrorResponse{
+				Type:    "AUTH_ERROR",
+				Message: "User Role not found in token",
+			})
 			return
 		}
 
 		userId, ok := c.Get("user_id")
 		if !ok {
-			c.JSON(http.StatusUnauthorized, ErrorResponse{Error: "User ID not found in token"})
+			c.JSON(http.StatusUnauthorized, ErrorResponse{
+				Type:    "AUTH_ERROR",
+				Message: "User ID not found in token",
+			})
 			return
 		}
 
@@ -302,7 +344,11 @@ func UpdateOrderStatus(orderClient grpc.OrderClient) gin.HandlerFunc {
 
 		var req OrderStatusRequest
 		if err := c.ShouldBindJSON(&req); err != nil {
-			c.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
+			c.JSON(http.StatusBadRequest, ErrorResponse{
+				Type:    "VALIDATION_ERROR",
+				Message: "Invalid request format",
+				Details: map[string]string{"format": err.Error()},
+			})
 			return
 		}
 
@@ -312,7 +358,10 @@ func UpdateOrderStatus(orderClient grpc.OrderClient) gin.HandlerFunc {
 			Status:     req.Status,
 		})
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
+			c.JSON(http.StatusInternalServerError, ErrorResponse{
+				Type:    "INTERNAL_ERROR",
+				Message: "Failed to update order",
+			})
 			return
 		}
 

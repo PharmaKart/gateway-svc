@@ -36,11 +36,19 @@ swag:
 # Generate Go code from .proto file
 proto:
 	@echo "Generating Go code from Proto files..."
-	protoc --go_out=$(PROTO_OUT) --go-grpc_out=$(PROTO_OUT) $(PROTO_DIR)/*.proto
+	protoc -I$(PROTO_DIR) --go_out=$(PROTO_OUT) --go-grpc_out=$(PROTO_OUT) $(PROTO_DIR)/*.proto
 
 # Copy proto file to related service
 proto-copy:
 	@echo "Copying Proto files to related service..."
+	# Copy common proto to all services
+	cp $(PROTO_DIR)/common.proto ../$(AUTHENTICATION_SERVICE_NAME)/$(PROTO_DIR)
+	cp $(PROTO_DIR)/common.proto ../$(ORDER_SERVICE_NAME)/$(PROTO_DIR)
+	cp $(PROTO_DIR)/common.proto ../$(PAYMENT_SERVICE_NAME)/$(PROTO_DIR)
+	cp $(PROTO_DIR)/common.proto ../$(PRODUCT_SERVICE_NAME)/$(PROTO_DIR)
+	cp $(PROTO_DIR)/common.proto ../$(REMINDER_SERVICE_NAME)/$(PROTO_DIR)
+	
+	# Copy service-specific protos
 	cp $(PROTO_DIR)/auth.proto ../$(AUTHENTICATION_SERVICE_NAME)/$(PROTO_DIR)
 
 	cp $(PROTO_DIR)/product.proto ../$(PRODUCT_SERVICE_NAME)/$(PROTO_DIR)

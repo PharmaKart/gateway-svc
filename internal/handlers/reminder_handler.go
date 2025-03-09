@@ -38,7 +38,10 @@ func ScheduleReminder(reminderClient grpc.ReminderClient) gin.HandlerFunc {
 
 		resp, err := reminderClient.ScheduleReminder(context.Background(), &req)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to schedule reminder: " + err.Error()})
+			c.JSON(http.StatusInternalServerError, ErrorResponse{
+				Type:    "INTERNAL_ERROR",
+				Message: "Failed to schedule reminder",
+			})
 			return
 		}
 
@@ -80,7 +83,10 @@ func ListReminders(reminderClient grpc.ReminderClient) gin.HandlerFunc {
 			FilterValue: filterValue,
 		})
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get reminders: " + err.Error()})
+			c.JSON(http.StatusInternalServerError, ErrorResponse{
+				Type:    "INTERNAL_ERROR",
+				Message: "Failed to get reminders",
+			})
 			return
 		}
 
@@ -109,7 +115,10 @@ func ListCustomerReminders(reminderClient grpc.ReminderClient) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		customerID, ok := c.Get("user_id")
 		if !ok {
-			c.JSON(http.StatusUnauthorized, ErrorResponse{Error: "User ID not found in token"})
+			c.JSON(http.StatusUnauthorized, ErrorResponse{
+				Type:    "AUTH_ERROR",
+				Message: "User ID not found in token",
+			})
 			return
 		}
 
@@ -130,7 +139,10 @@ func ListCustomerReminders(reminderClient grpc.ReminderClient) gin.HandlerFunc {
 			FilterValue: filterValue,
 		})
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get reminders: " + err.Error()})
+			c.JSON(http.StatusInternalServerError, ErrorResponse{
+				Type:    "INTERNAL_ERROR",
+				Message: "Failed to get reminders",
+			})
 			return
 		}
 
@@ -153,7 +165,10 @@ func DeleteReminder(reminderClient grpc.ReminderClient) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		customerID, ok := c.Get("user_id")
 		if !ok {
-			c.JSON(http.StatusUnauthorized, ErrorResponse{Error: "User ID not found in token"})
+			c.JSON(http.StatusUnauthorized, ErrorResponse{
+				Type:    "AUTH_ERROR",
+				Message: "User ID not found in token",
+			})
 			return
 		}
 
@@ -164,7 +179,10 @@ func DeleteReminder(reminderClient grpc.ReminderClient) gin.HandlerFunc {
 			ReminderId: reminderID,
 		})
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete reminder: " + err.Error()})
+			c.JSON(http.StatusInternalServerError, ErrorResponse{
+				Type:    "INTERNAL_ERROR",
+				Message: "Failed to delete reminder",
+			})
 			return
 		}
 
@@ -188,7 +206,10 @@ func UpdateReminder(reminderClient grpc.ReminderClient) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		customerID, ok := c.Get("user_id")
 		if !ok {
-			c.JSON(http.StatusUnauthorized, ErrorResponse{Error: "User ID not found in token"})
+			c.JSON(http.StatusUnauthorized, ErrorResponse{
+				Type:    "AUTH_ERROR",
+				Message: "User ID not found in token",
+			})
 			return
 		}
 
@@ -196,7 +217,11 @@ func UpdateReminder(reminderClient grpc.ReminderClient) gin.HandlerFunc {
 
 		var req proto.UpdateReminderRequest
 		if err := c.ShouldBindJSON(&req); err != nil {
-			c.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
+			c.JSON(http.StatusBadRequest, ErrorResponse{
+				Type:    "VALIDATION_ERROR",
+				Message: "Invalid request format",
+				Details: map[string]string{"format": err.Error()},
+			})
 			return
 		}
 
@@ -207,7 +232,10 @@ func UpdateReminder(reminderClient grpc.ReminderClient) gin.HandlerFunc {
 			ReminderDate: req.ReminderDate,
 		})
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update reminder: " + err.Error()})
+			c.JSON(http.StatusInternalServerError, ErrorResponse{
+				Type:    "INTERNAL_ERROR",
+				Message: "Failed to update reminder",
+			})
 			return
 		}
 
@@ -230,7 +258,10 @@ func ToggleReminder(reminderClient grpc.ReminderClient) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		customerID, ok := c.Get("user_id")
 		if !ok {
-			c.JSON(http.StatusUnauthorized, ErrorResponse{Error: "User ID not found in token"})
+			c.JSON(http.StatusUnauthorized, ErrorResponse{
+				Type:    "AUTH_ERROR",
+				Message: "User ID not found in token",
+			})
 			return
 		}
 
@@ -241,7 +272,10 @@ func ToggleReminder(reminderClient grpc.ReminderClient) gin.HandlerFunc {
 			ReminderId: reminderID,
 		})
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to toggle reminder: " + err.Error()})
+			c.JSON(http.StatusInternalServerError, ErrorResponse{
+				Type:    "INTERNAL_ERROR",
+				Message: "Failed to toggle reminder",
+			})
 			return
 		}
 
@@ -270,13 +304,19 @@ func ListReminderLogs(reminderClient grpc.ReminderClient) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		userRole, ok := c.Get("user_role")
 		if !ok {
-			c.JSON(http.StatusUnauthorized, ErrorResponse{Error: "User Role not found in token"})
+			c.JSON(http.StatusUnauthorized, ErrorResponse{
+				Type:    "AUTH_ERROR",
+				Message: "User Role not found in token",
+			})
 			return
 		}
 
 		customerID, ok := c.Get("user_id")
 		if !ok {
-			c.JSON(http.StatusUnauthorized, ErrorResponse{Error: "User ID not found in token"})
+			c.JSON(http.StatusUnauthorized, ErrorResponse{
+				Type:    "AUTH_ERROR",
+				Message: "User ID not found in token",
+			})
 			return
 		}
 
@@ -303,7 +343,10 @@ func ListReminderLogs(reminderClient grpc.ReminderClient) gin.HandlerFunc {
 			FilterValue: filterValue,
 		})
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get reminder logs: " + err.Error()})
+			c.JSON(http.StatusInternalServerError, ErrorResponse{
+				Type:    "INTERNAL_ERROR",
+				Message: "Failed to get reminder logs",
+			})
 			return
 		}
 
