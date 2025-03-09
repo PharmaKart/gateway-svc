@@ -15,6 +15,16 @@ import (
 	"github.com/stripe/stripe-go/webhook"
 )
 
+// HandleWebhook processes Stripe webhook events
+// @Summary Process Stripe webhook
+// @Description Processes incoming Stripe webhook events
+// @Tags Payments
+// @Accept json
+// @Produce json
+// @Success 200 {object} nil "OK"
+// @Failure 400 {object} utils.ErrorResponse "Bad Request"
+// @Failure 503 {object} utils.ErrorResponse "Service Unavailable"
+// @Router /api/v1/webhook [post]
 func HandleWebhook(cfg *config.Config, paymentClient grpc.PaymentClient) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		const MaxBodyBytes = int64(65536)
@@ -29,7 +39,11 @@ func HandleWebhook(cfg *config.Config, paymentClient grpc.PaymentClient) gin.Han
 			utils.Error("Error reading request body", map[string]interface{}{
 				"error": err,
 			})
-			c.Status(http.StatusServiceUnavailable)
+			c.JSON(http.StatusServiceUnavailable, utils.ErrorResponse{
+				Type:    "SERVICE_UNAVAILABLE",
+				Message: "Error reading request body",
+				Details: map[string]string{"error": err.Error()},
+			})
 			return
 		}
 
@@ -43,7 +57,11 @@ func HandleWebhook(cfg *config.Config, paymentClient grpc.PaymentClient) gin.Han
 			utils.Error("Error verifying webhook signature", map[string]interface{}{
 				"error": err,
 			})
-			c.Status(http.StatusBadRequest) // Return a 400 error on a bad signature
+			c.JSON(http.StatusBadRequest, utils.ErrorResponse{
+				Type:    "VALIDATION_ERROR",
+				Message: "Error verifying webhook signature",
+				Details: map[string]string{"error": err.Error()},
+			})
 			return
 		}
 
@@ -63,7 +81,10 @@ func HandleWebhook(cfg *config.Config, paymentClient grpc.PaymentClient) gin.Han
 			})
 		}
 
-		c.Status(http.StatusOK)
+		c.JSON(http.StatusOK, gin.H{
+			"success": true,
+			"message": "Webhook processed successfully",
+		})
 	}
 }
 
@@ -74,13 +95,20 @@ func handleAsyncPaymentFailed(event stripe.Event, paymentClient grpc.PaymentClie
 		"event": event.ID,
 	})
 
-	paymentClient.StorePayment(context.Background(), &proto.StorePaymentRequest{
+	_, err := paymentClient.StorePayment(context.Background(), &proto.StorePaymentRequest{
 		TransactionId: event.ID,
 		OrderId:       event.Data.Object["client_reference_id"].(string),
 		CustomerId:    event.Data.Object["customer"].(string),
 		Amount:        event.Data.Object["amount_total"].(float64),
 		Status:        "failed",
 	})
+
+	if err != nil {
+		utils.Error("Failed to store failed payment", map[string]interface{}{
+			"error": err,
+			"event": event.ID,
+		})
+	}
 }
 
 func handleAsyncPaymentSucceeded(event stripe.Event) *string {
@@ -91,7 +119,10 @@ func handleAsyncPaymentSucceeded(event stripe.Event) *string {
 	receiptURL, ok := event.Data.Object["receipt_url"].(string)
 	if ok {
 		receiptUrl = &receiptURL
-		// Handle error or log missing recieptUrl
+	} else {
+		utils.Warn("Receipt URL not found in event data", map[string]interface{}{
+			"event": event.ID,
+		})
 	}
 
 	utils.Info("Handling async payment succeeded event", map[string]interface{}{
@@ -112,6 +143,7 @@ func handleCheckoutSessionCompleted(event stripe.Event, paymentClient grpc.Payme
 		utils.Warn("Order ID not found in metadata", map[string]interface{}{
 			"event": event.ID,
 		})
+		return
 	}
 
 	customerID, ok := metadata["customer_id"].(string)
@@ -120,6 +152,7 @@ func handleCheckoutSessionCompleted(event stripe.Event, paymentClient grpc.Payme
 		utils.Warn("Customer ID not found in metadata", map[string]interface{}{
 			"event": event.ID,
 		})
+		return
 	}
 
 	amount, ok := event.Data.Object["amount_total"].(float64)
@@ -128,6 +161,7 @@ func handleCheckoutSessionCompleted(event stripe.Event, paymentClient grpc.Payme
 		utils.Warn("Amount not found in event data", map[string]interface{}{
 			"event": event.ID,
 		})
+		return
 	}
 
 	status, ok := event.Data.Object["status"].(string)
@@ -136,16 +170,26 @@ func handleCheckoutSessionCompleted(event stripe.Event, paymentClient grpc.Payme
 		utils.Warn("Status not found in event data", map[string]interface{}{
 			"event": event.ID,
 		})
+		status = "completed" // Default status
 	}
 
 	// Handle checkout session completed
-	paymentClient.StorePayment(context.Background(), &proto.StorePaymentRequest{
+	_, err := paymentClient.StorePayment(context.Background(), &proto.StorePaymentRequest{
 		TransactionId: event.ID,
 		OrderId:       orderID,
 		CustomerId:    customerID,
 		Amount:        amount / 100,
 		Status:        status,
 	})
+
+	if err != nil {
+		utils.Error("Failed to store completed payment", map[string]interface{}{
+			"error": err,
+			"event": event.ID,
+		})
+		return
+	}
+
 	utils.Info("Handling checkout session completed event", map[string]interface{}{
 		"event": event.ID,
 	})
@@ -153,13 +197,22 @@ func handleCheckoutSessionCompleted(event stripe.Event, paymentClient grpc.Payme
 
 func handleCheckoutSessionExpired(event stripe.Event, paymentClient grpc.PaymentClient) {
 	// Handle checkout session expired
-	paymentClient.StorePayment(context.Background(), &proto.StorePaymentRequest{
+	_, err := paymentClient.StorePayment(context.Background(), &proto.StorePaymentRequest{
 		TransactionId: event.ID,
 		OrderId:       event.Data.Object["client_reference_id"].(string),
 		CustomerId:    event.Data.Object["customer"].(string),
 		Amount:        event.Data.Object["amount_total"].(float64),
 		Status:        "expired",
 	})
+
+	if err != nil {
+		utils.Error("Failed to store expired payment", map[string]interface{}{
+			"error": err,
+			"event": event.ID,
+		})
+		return
+	}
+
 	utils.Warn("Handling checkout session expired event", map[string]interface{}{
 		"event": event.ID,
 	})
@@ -175,13 +228,18 @@ func handleCheckoutSessionExpired(event stripe.Event, paymentClient grpc.Payment
 // @Param Authorization header string true "Bearer token"
 // @Param id path string true "Payment ID"
 // @Success 200 {object} proto.GetPaymentResponse
+// @Failure 400 {object} utils.ErrorResponse "Bad Request"
+// @Failure 401 {object} utils.ErrorResponse "Unauthorized"
+// @Failure 403 {object} utils.ErrorResponse "Forbidden"
+// @Failure 404 {object} utils.ErrorResponse "Not Found"
+// @Failure 500 {object} utils.ErrorResponse "Internal Server Error"
 // @Router /api/v1/payments/{id} [get]
 func GetPayment(paymentClient grpc.PaymentClient) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		userRole, ok := c.Get("user_role")
 		var customerID string
 		if !ok {
-			c.JSON(http.StatusUnauthorized, ErrorResponse{
+			c.JSON(http.StatusUnauthorized, utils.ErrorResponse{
 				Type:    "AUTH_ERROR",
 				Message: "User Role not found in token",
 			})
@@ -190,7 +248,7 @@ func GetPayment(paymentClient grpc.PaymentClient) gin.HandlerFunc {
 
 		userId, ok := c.Get("user_id")
 		if !ok {
-			c.JSON(http.StatusUnauthorized, ErrorResponse{
+			c.JSON(http.StatusUnauthorized, utils.ErrorResponse{
 				Type:    "AUTH_ERROR",
 				Message: "User ID not found in token",
 			})
@@ -209,9 +267,34 @@ func GetPayment(paymentClient grpc.PaymentClient) gin.HandlerFunc {
 			CustomerId: customerID,
 		})
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, ErrorResponse{
+			utils.Error("Failed to get payment", map[string]interface{}{
+				"error":      err,
+				"payment_id": paymentID,
+			})
+			c.JSON(http.StatusInternalServerError, utils.ErrorResponse{
 				Type:    "INTERNAL_ERROR",
-				Message: err.Error(),
+				Message: "Failed to get payment",
+				Details: map[string]string{"error": err.Error()},
+			})
+			return
+		}
+
+		if !resp.Success {
+			utils.Error("Failed to get payment", map[string]interface{}{
+				"error":      resp,
+				"payment_id": paymentID,
+			})
+
+			if resp.Error != nil {
+				errorResp, statusCode := utils.ConvertProtoErrorToResponse(resp.Error)
+				c.JSON(statusCode, errorResp)
+				return
+			}
+
+			// Fallback if error structure is not available
+			c.JSON(http.StatusBadRequest, utils.ErrorResponse{
+				Type:    "UNKNOWN_ERROR",
+				Message: "Failed to get payment",
 			})
 			return
 		}
@@ -230,13 +313,18 @@ func GetPayment(paymentClient grpc.PaymentClient) gin.HandlerFunc {
 // @Param Authorization header string true "Bearer token"
 // @Param id path string true "Order ID"
 // @Success 200 {object} proto.GetPaymentResponse
+// @Failure 400 {object} utils.ErrorResponse "Bad Request"
+// @Failure 401 {object} utils.ErrorResponse "Unauthorized"
+// @Failure 403 {object} utils.ErrorResponse "Forbidden"
+// @Failure 404 {object} utils.ErrorResponse "Not Found"
+// @Failure 500 {object} utils.ErrorResponse "Internal Server Error"
 // @Router /api/v1/payments/order/{id} [get]
 func GetPaymentByOrderID(paymentClient grpc.PaymentClient) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		userRole, ok := c.Get("user_role")
 		var customerID string
 		if !ok {
-			c.JSON(http.StatusUnauthorized, ErrorResponse{
+			c.JSON(http.StatusUnauthorized, utils.ErrorResponse{
 				Type:    "AUTH_ERROR",
 				Message: "User Role not found in token",
 			})
@@ -245,7 +333,7 @@ func GetPaymentByOrderID(paymentClient grpc.PaymentClient) gin.HandlerFunc {
 
 		userId, ok := c.Get("user_id")
 		if !ok {
-			c.JSON(http.StatusUnauthorized, ErrorResponse{
+			c.JSON(http.StatusUnauthorized, utils.ErrorResponse{
 				Type:    "AUTH_ERROR",
 				Message: "User ID not found in token",
 			})
@@ -264,9 +352,34 @@ func GetPaymentByOrderID(paymentClient grpc.PaymentClient) gin.HandlerFunc {
 			CustomerId: customerID,
 		})
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, ErrorResponse{
+			utils.Error("Failed to get payment by order ID", map[string]interface{}{
+				"error":    err,
+				"order_id": orderID,
+			})
+			c.JSON(http.StatusInternalServerError, utils.ErrorResponse{
 				Type:    "INTERNAL_ERROR",
-				Message: err.Error(),
+				Message: "Failed to get payment by order ID",
+				Details: map[string]string{"error": err.Error()},
+			})
+			return
+		}
+
+		if !resp.Success {
+			utils.Error("Failed to get payment by order ID", map[string]interface{}{
+				"error":    resp,
+				"order_id": orderID,
+			})
+
+			if resp.Error != nil {
+				errorResp, statusCode := utils.ConvertProtoErrorToResponse(resp.Error)
+				c.JSON(statusCode, errorResp)
+				return
+			}
+
+			// Fallback if error structure is not available
+			c.JSON(http.StatusBadRequest, utils.ErrorResponse{
+				Type:    "UNKNOWN_ERROR",
+				Message: "Failed to get payment by order ID",
 			})
 			return
 		}

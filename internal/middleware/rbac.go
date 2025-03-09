@@ -14,7 +14,10 @@ func RBACMiddleware(allowedRoles ...string) gin.HandlerFunc {
 			utils.Error("User not authenticated", map[string]interface{}{
 				"path": c.Request.URL.Path,
 			})
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+			c.AbortWithStatusJSON(http.StatusUnauthorized, utils.ErrorResponse{
+				Type:    "AUTH_ERROR",
+				Message: "User not authenticated",
+			})
 			c.Abort()
 			return
 		}
@@ -31,7 +34,10 @@ func RBACMiddleware(allowedRoles ...string) gin.HandlerFunc {
 			utils.Error("User not authorized", map[string]interface{}{
 				"path": c.Request.URL.Path,
 			})
-			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "User not authorized"})
+			c.AbortWithStatusJSON(http.StatusForbidden, utils.ErrorResponse{
+				Type:    "AUTH_ERROR",
+				Message: "User not authorized",
+			})
 			c.Abort()
 			return
 		}
