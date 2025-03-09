@@ -43,8 +43,9 @@ message ScheduleReminderRequest {
 }
 
 message ScheduleReminderResponse {
-    string reminder_id = 1;
-    common.Error error = 2;
+    bool success = 1;
+    string reminder_id = 2;
+    common.Error error = 3;
 }
 
 message ListRemindersRequest {
@@ -57,11 +58,12 @@ message ListRemindersRequest {
 }
 
 message ListRemindersResponse {
-    repeated Reminder reminders = 1;
-    int32 total = 2;
-    int32 page = 3;
-    int32 limit = 4;
-    common.Error error = 5;
+    bool success = 1;
+    repeated Reminder reminders = 2;
+    int32 total = 3;
+    int32 page = 4;
+    int32 limit = 5;
+    common.Error error = 6;
 }
 
 message ListCustomerRemindersRequest {
@@ -82,8 +84,9 @@ message UpdateReminderRequest {
 }
 
 message UpdateReminderResponse {
-    string message = 1;
-    common.Error error = 2;
+    bool success = 1;
+    string message = 2;
+    common.Error error = 3;
 }
 
 message DeleteReminderRequest {
@@ -92,8 +95,9 @@ message DeleteReminderRequest {
 }
 
 message DeleteReminderResponse {
-    string message = 1;
-    common.Error error = 2;
+    bool success = 1;
+    string message = 2;
+    common.Error error = 3;
 }
 
 message ToggleReminderRequest {
@@ -102,8 +106,9 @@ message ToggleReminderRequest {
 }
 
 message ToggleReminderResponse {
-    string message = 1;
-    common.Error error = 2;
+    bool success = 1;
+    string message = 2;
+    common.Error error = 3;
 }
 
 message ListReminderLogsRequest {
@@ -118,9 +123,10 @@ message ListReminderLogsRequest {
 }
 
 message ListReminderLogsResponse {
-    repeated ReminderLog logs = 1;
-    int32 total = 2;
-    int32 page = 3;
-    int32 limit = 4;
-    common.Error error = 5;
+    bool success = 1;
+    repeated ReminderLog logs = 2;
+    int32 total = 3;
+    int32 page = 4;
+    int32 limit = 5;
+    common.Error error = 6;
 }

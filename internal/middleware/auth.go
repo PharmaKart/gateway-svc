@@ -23,7 +23,10 @@ func AuthMiddleware(authClient grpc.AuthClient) gin.HandlerFunc {
 			utils.Error("Authorization header is missing", map[string]interface{}{
 				"path": c.Request.URL.Path,
 			})
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Authorization header is missing"})
+			c.JSON(http.StatusUnauthorized, utils.ErrorResponse{
+				Type:    "AUTH_ERROR",
+				Message: "Authorization header is missing",
+			})
 			c.Abort()
 			return
 		}
@@ -33,7 +36,10 @@ func AuthMiddleware(authClient grpc.AuthClient) gin.HandlerFunc {
 			utils.Error("Invalid authorization header", map[string]interface{}{
 				"path": c.Request.URL.Path,
 			})
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid authorization header"})
+			c.JSON(http.StatusUnauthorized, utils.ErrorResponse{
+				Type:    "AUTH_ERROR",
+				Message: "Invalid authorization header",
+			})
 			c.Abort()
 			return
 		}
@@ -44,7 +50,10 @@ func AuthMiddleware(authClient grpc.AuthClient) gin.HandlerFunc {
 			utils.Error("Failed to verify token", map[string]interface{}{
 				"error": err,
 			})
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Failed to verify token"})
+			c.JSON(http.StatusUnauthorized, utils.ErrorResponse{
+				Type:    "AUTH_ERROR",
+				Message: "Failed to verify token",
+			})
 			c.Abort()
 			return
 		}
@@ -53,7 +62,18 @@ func AuthMiddleware(authClient grpc.AuthClient) gin.HandlerFunc {
 			utils.Error(resp.Message, map[string]interface{}{
 				"path": c.Request.URL.Path,
 			})
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": resp.Message})
+			if resp.Error != nil {
+				errorResp, statusCode := utils.ConvertProtoErrorToResponse(resp.Error)
+				c.JSON(statusCode, errorResp)
+				c.Abort()
+				return
+			}
+
+			// Fallback if error structure is not available
+			c.JSON(http.StatusBadRequest, utils.ErrorResponse{
+				Type:    "UNKNOWN_ERROR",
+				Message: resp.Message,
+			})
 			c.Abort()
 			return
 		}

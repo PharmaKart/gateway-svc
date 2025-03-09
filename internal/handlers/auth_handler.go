@@ -41,7 +41,7 @@ func Register(authClient grpc.AuthClient) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var req RegisterRequest
 		if err := c.ShouldBindJSON(&req); err != nil {
-			c.JSON(http.StatusBadRequest, ErrorResponse{
+			c.JSON(http.StatusBadRequest, utils.ErrorResponse{
 				Type:    "VALIDATION_ERROR",
 				Message: "Invalid request format",
 				Details: map[string]string{"format": err.Error()},
@@ -70,7 +70,7 @@ func Register(authClient grpc.AuthClient) gin.HandlerFunc {
 			utils.Error("Failed to register user", map[string]interface{}{
 				"error": err,
 			})
-			c.JSON(http.StatusInternalServerError, ErrorResponse{
+			c.JSON(http.StatusInternalServerError, utils.ErrorResponse{
 				Type:    "INTERNAL_ERROR",
 				Message: "Failed to register user",
 			})
@@ -83,13 +83,13 @@ func Register(authClient grpc.AuthClient) gin.HandlerFunc {
 			})
 
 			if resp.Error != nil {
-				errorResp, statusCode := convertProtoErrorToResponse(resp.Error)
+				errorResp, statusCode := utils.ConvertProtoErrorToResponse(resp.Error)
 				c.JSON(statusCode, errorResp)
 				return
 			}
 
 			// Fallback if error structure is not available
-			c.JSON(http.StatusBadRequest, ErrorResponse{
+			c.JSON(http.StatusBadRequest, utils.ErrorResponse{
 				Type:    "UNKNOWN_ERROR",
 				Message: resp.Message,
 			})
@@ -130,7 +130,7 @@ func Login(authClient grpc.AuthClient) gin.HandlerFunc {
 			utils.Error("Failed to bind JSON", map[string]interface{}{
 				"error": err,
 			})
-			c.JSON(http.StatusBadRequest, ErrorResponse{
+			c.JSON(http.StatusBadRequest, utils.ErrorResponse{
 				Type:    "VALIDATION_ERROR",
 				Message: "Invalid request format",
 				Details: map[string]string{"format": err.Error()},
@@ -149,7 +149,7 @@ func Login(authClient grpc.AuthClient) gin.HandlerFunc {
 			utils.Error("Failed to login", map[string]interface{}{
 				"error": err,
 			})
-			c.JSON(http.StatusInternalServerError, ErrorResponse{
+			c.JSON(http.StatusInternalServerError, utils.ErrorResponse{
 				Type:    "INTERNAL_ERROR",
 				Message: "Failed to login",
 			})
@@ -162,13 +162,13 @@ func Login(authClient grpc.AuthClient) gin.HandlerFunc {
 			})
 
 			if resp.Error != nil {
-				errorResp, statusCode := convertProtoErrorToResponse(resp.Error)
+				errorResp, statusCode := utils.ConvertProtoErrorToResponse(resp.Error)
 				c.JSON(statusCode, errorResp)
 				return
 			}
 
 			// Fallback if error structure is not available
-			c.JSON(http.StatusBadRequest, ErrorResponse{
+			c.JSON(http.StatusBadRequest, utils.ErrorResponse{
 				Type:    "UNKNOWN_ERROR",
 				Message: resp.Message,
 			})

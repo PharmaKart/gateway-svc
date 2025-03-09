@@ -28,6 +28,14 @@ type Order struct {
 	Prescription *multipart.FileHeader `form:"prescription" swaggerignore:"true"`
 }
 
+// ErrorResponse represents an error response from the API
+// @Description Error response
+type ErrorResponse struct {
+	Type    string            `json:"type" example:"VALIDATION_ERROR"`
+	Message string            `json:"message" example:"Invalid request format"`
+	Details map[string]string `json:"details,omitempty" example:"field:error message"`
+}
+
 // @Description Order placement request
 type SwaggerOrderRequest struct {
 	Items        []OrderItem `json:"items"`
@@ -46,6 +54,7 @@ type SwaggerOrderRequest struct {
 // @Param prescription formData file false "Prescription Image"
 // @Success 200 {object} proto.PlaceOrderResponse
 // @Failure 400 {object} ErrorResponse
+// @Failure 401 {object} ErrorResponse
 // @Failure 409 {object} ErrorResponse
 // @Failure 500 {object} ErrorResponse
 // @Router /api/v1/orders [post]
@@ -53,7 +62,7 @@ func PlaceOrder(cfg *config.Config, orderClient grpc.OrderClient) gin.HandlerFun
 	return func(c *gin.Context) {
 		customerID, ok := c.Get("user_id")
 		if !ok {
-			c.JSON(http.StatusUnauthorized, ErrorResponse{
+			c.JSON(http.StatusUnauthorized, utils.ErrorResponse{
 				Type:    "AUTH_ERROR",
 				Message: "User ID not found in token",
 			})
@@ -72,10 +81,20 @@ func PlaceOrder(cfg *config.Config, orderClient grpc.OrderClient) gin.HandlerFun
 
 		// Unmarshal the JSON string into the temporary struct
 		if err := json.Unmarshal([]byte(itemsStr), &tempRequest); err != nil {
-			c.JSON(http.StatusBadRequest, ErrorResponse{
+			c.JSON(http.StatusBadRequest, utils.ErrorResponse{
 				Type:    "VALIDATION_ERROR",
 				Message: "Invalid request format",
 				Details: map[string]string{"format": err.Error()},
+			})
+			return
+		}
+
+		// Check if items are provided
+		if len(tempRequest.Items) == 0 {
+			c.JSON(http.StatusBadRequest, utils.ErrorResponse{
+				Type:    "VALIDATION_ERROR",
+				Message: "Invalid request format",
+				Details: map[string]string{"items": "At least one item is required"},
 			})
 			return
 		}
@@ -92,13 +111,13 @@ func PlaceOrder(cfg *config.Config, orderClient grpc.OrderClient) gin.HandlerFun
 		// Check if a prescription is provided
 		if req.Prescription != nil {
 			// Validate file type
-			allowedExtensions := map[string]bool{".jpg": true, ".jpeg": true, ".png": true}
+			allowedExtensions := map[string]bool{".jpg": true, ".jpeg": true, ".png": true, ".pdf": true}
 			ext := filepath.Ext(req.Prescription.Filename)
 			if !allowedExtensions[ext] {
-				c.JSON(http.StatusBadRequest, ErrorResponse{
+				c.JSON(http.StatusBadRequest, utils.ErrorResponse{
 					Type:    "VALIDATION_ERROR",
 					Message: "Invalid file format",
-					Details: map[string]string{"format": "Only JPG, JPEG, PNG files are allowed"},
+					Details: map[string]string{"format": "Only JPG, JPEG, PNG, and PDF files are allowed"},
 				})
 				return
 			}
@@ -106,7 +125,7 @@ func PlaceOrder(cfg *config.Config, orderClient grpc.OrderClient) gin.HandlerFun
 			// Upload prescription to S3
 			url, err := utils.UploadImageToS3(c, cfg, "prescriptions", req.Prescription)
 			if err != nil {
-				c.JSON(http.StatusInternalServerError, ErrorResponse{
+				c.JSON(http.StatusInternalServerError, utils.ErrorResponse{
 					Type:    "INTERNAL_ERROR",
 					Message: "Failed to upload prescription",
 				})
@@ -133,8 +152,31 @@ func PlaceOrder(cfg *config.Config, orderClient grpc.OrderClient) gin.HandlerFun
 			PrescriptionUrl: prescriptionURL,
 		})
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, ErrorResponse{
+			utils.Error("Failed to place order", map[string]interface{}{
+				"error": err,
+			})
+			c.JSON(http.StatusInternalServerError, utils.ErrorResponse{
 				Type:    "INTERNAL_ERROR",
+				Message: "Failed to place order",
+			})
+			return
+		}
+
+		// Check if the response indicates a failure
+		if !resp.Success {
+			utils.Error("Failed to place order", map[string]interface{}{
+				"error": resp,
+			})
+
+			if resp.Error != nil {
+				errorResp, statusCode := utils.ConvertProtoErrorToResponse(resp.Error)
+				c.JSON(statusCode, errorResp)
+				return
+			}
+
+			// Fallback if error structure is not available
+			c.JSON(http.StatusBadRequest, utils.ErrorResponse{
+				Type:    "UNKNOWN_ERROR",
 				Message: "Failed to place order",
 			})
 			return
@@ -154,13 +196,17 @@ func PlaceOrder(cfg *config.Config, orderClient grpc.OrderClient) gin.HandlerFun
 // @Param Authorization header string true "Bearer token"
 // @Param id path string true "Order ID"
 // @Success 200 {object} proto.GetOrderResponse
+// @Failure 400 {object} ErrorResponse
+// @Failure 401 {object} ErrorResponse
+// @Failure 404 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
 // @Router /api/v1/orders/{id} [get]
 func GetOrder(orderClient grpc.OrderClient) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		userRole, ok := c.Get("user_role")
 		var customerID string
 		if !ok {
-			c.JSON(http.StatusUnauthorized, ErrorResponse{
+			c.JSON(http.StatusUnauthorized, utils.ErrorResponse{
 				Type:    "AUTH_ERROR",
 				Message: "User Role not found in token",
 			})
@@ -169,7 +215,7 @@ func GetOrder(orderClient grpc.OrderClient) gin.HandlerFunc {
 
 		userId, ok := c.Get("user_id")
 		if !ok {
-			c.JSON(http.StatusUnauthorized, ErrorResponse{
+			c.JSON(http.StatusUnauthorized, utils.ErrorResponse{
 				Type:    "AUTH_ERROR",
 				Message: "User ID not found in token",
 			})
@@ -188,8 +234,31 @@ func GetOrder(orderClient grpc.OrderClient) gin.HandlerFunc {
 			CustomerId: customerID,
 		})
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, ErrorResponse{
+			utils.Error("Failed to get order", map[string]interface{}{
+				"error": err,
+			})
+			c.JSON(http.StatusInternalServerError, utils.ErrorResponse{
 				Type:    "INTERNAL_ERROR",
+				Message: "Failed to get order",
+			})
+			return
+		}
+
+		// Check if the response indicates a failure
+		if !resp.Success {
+			utils.Error("Failed to get order", map[string]interface{}{
+				"error": resp,
+			})
+
+			if resp.Error != nil {
+				errorResp, statusCode := utils.ConvertProtoErrorToResponse(resp.Error)
+				c.JSON(statusCode, errorResp)
+				return
+			}
+
+			// Fallback if error structure is not available
+			c.JSON(http.StatusBadRequest, utils.ErrorResponse{
+				Type:    "UNKNOWN_ERROR",
 				Message: "Failed to get order",
 			})
 			return
@@ -214,12 +283,15 @@ func GetOrder(orderClient grpc.OrderClient) gin.HandlerFunc {
 // @Param filter query string false "Filter field"
 // @Param filter_value query string false "Filter value"
 // @Success 200 {object} proto.ListCustomersOrdersResponse
+// @Failure 400 {object} ErrorResponse
+// @Failure 401 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
 // @Router /api/v1/orders [get]
 func ListCustomersOrders(orderClient grpc.OrderClient) gin.HandlerFunc {
 	return func(c *gin.Context) { // Get customer ID from the token
 		customerID, ok := c.Get("user_id")
 		if !ok {
-			c.JSON(http.StatusUnauthorized, ErrorResponse{
+			c.JSON(http.StatusUnauthorized, utils.ErrorResponse{
 				Type:    "AUTH_ERROR",
 				Message: "User ID not found in token",
 			})
@@ -243,8 +315,31 @@ func ListCustomersOrders(orderClient grpc.OrderClient) gin.HandlerFunc {
 			FilterValue: filterValue,
 		})
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, ErrorResponse{
+			utils.Error("Failed to list orders", map[string]interface{}{
+				"error": err,
+			})
+			c.JSON(http.StatusInternalServerError, utils.ErrorResponse{
 				Type:    "INTERNAL_ERROR",
+				Message: "Failed to list orders",
+			})
+			return
+		}
+
+		// Check if the response indicates a failure
+		if !resp.Success {
+			utils.Error("Failed to list orders", map[string]interface{}{
+				"error": resp,
+			})
+
+			if resp.Error != nil {
+				errorResp, statusCode := utils.ConvertProtoErrorToResponse(resp.Error)
+				c.JSON(statusCode, errorResp)
+				return
+			}
+
+			// Fallback if error structure is not available
+			c.JSON(http.StatusBadRequest, utils.ErrorResponse{
+				Type:    "UNKNOWN_ERROR",
 				Message: "Failed to list orders",
 			})
 			return
@@ -269,6 +364,10 @@ func ListCustomersOrders(orderClient grpc.OrderClient) gin.HandlerFunc {
 // @Param filter query string false "Filter field"
 // @Param filter_value query string false "Filter value"
 // @Success 200 {object} proto.ListAllOrdersResponse
+// @Failure 400 {object} ErrorResponse
+// @Failure 401 {object} ErrorResponse
+// @Failure 403 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
 // @Router /api/v1/admin/orders [get]
 func ListAllOrders(orderClient grpc.OrderClient) gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -287,8 +386,31 @@ func ListAllOrders(orderClient grpc.OrderClient) gin.HandlerFunc {
 			FilterValue: filterValue,
 		})
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, ErrorResponse{
+			utils.Error("Failed to list orders", map[string]interface{}{
+				"error": err,
+			})
+			c.JSON(http.StatusInternalServerError, utils.ErrorResponse{
 				Type:    "INTERNAL_ERROR",
+				Message: "Failed to list orders",
+			})
+			return
+		}
+
+		// Check if the response indicates a failure
+		if !resp.Success {
+			utils.Error("Failed to list all orders", map[string]interface{}{
+				"error": resp,
+			})
+
+			if resp.Error != nil {
+				errorResp, statusCode := utils.ConvertProtoErrorToResponse(resp.Error)
+				c.JSON(statusCode, errorResp)
+				return
+			}
+
+			// Fallback if error structure is not available
+			c.JSON(http.StatusBadRequest, utils.ErrorResponse{
+				Type:    "UNKNOWN_ERROR",
 				Message: "Failed to list orders",
 			})
 			return
@@ -313,13 +435,18 @@ type OrderStatusRequest struct {
 // @Param id path string true "Order ID"
 // @Param request body OrderStatusRequest true "Order Details"
 // @Success 200 {object} proto.UpdateOrderStatusResponse
+// @Failure 400 {object} ErrorResponse
+// @Failure 401 {object} ErrorResponse
+// @Failure 403 {object} ErrorResponse
+// @Failure 404 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
 // @Router /api/v1/admin/orders/{id} [put]
 func UpdateOrderStatus(orderClient grpc.OrderClient) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		userRole, ok := c.Get("user_role")
 		var customerID string
 		if !ok {
-			c.JSON(http.StatusUnauthorized, ErrorResponse{
+			c.JSON(http.StatusUnauthorized, utils.ErrorResponse{
 				Type:    "AUTH_ERROR",
 				Message: "User Role not found in token",
 			})
@@ -328,7 +455,7 @@ func UpdateOrderStatus(orderClient grpc.OrderClient) gin.HandlerFunc {
 
 		userId, ok := c.Get("user_id")
 		if !ok {
-			c.JSON(http.StatusUnauthorized, ErrorResponse{
+			c.JSON(http.StatusUnauthorized, utils.ErrorResponse{
 				Type:    "AUTH_ERROR",
 				Message: "User ID not found in token",
 			})
@@ -344,7 +471,7 @@ func UpdateOrderStatus(orderClient grpc.OrderClient) gin.HandlerFunc {
 
 		var req OrderStatusRequest
 		if err := c.ShouldBindJSON(&req); err != nil {
-			c.JSON(http.StatusBadRequest, ErrorResponse{
+			c.JSON(http.StatusBadRequest, utils.ErrorResponse{
 				Type:    "VALIDATION_ERROR",
 				Message: "Invalid request format",
 				Details: map[string]string{"format": err.Error()},
@@ -358,9 +485,32 @@ func UpdateOrderStatus(orderClient grpc.OrderClient) gin.HandlerFunc {
 			Status:     req.Status,
 		})
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, ErrorResponse{
+			utils.Error("Failed to update order status", map[string]interface{}{
+				"error": err,
+			})
+			c.JSON(http.StatusInternalServerError, utils.ErrorResponse{
 				Type:    "INTERNAL_ERROR",
 				Message: "Failed to update order",
+			})
+			return
+		}
+
+		// Check if the response indicates a failure
+		if !resp.Success {
+			utils.Error("Failed to update order status", map[string]interface{}{
+				"error": resp.Message,
+			})
+
+			if resp.Error != nil {
+				errorResp, statusCode := utils.ConvertProtoErrorToResponse(resp.Error)
+				c.JSON(statusCode, errorResp)
+				return
+			}
+
+			// Fallback if error structure is not available
+			c.JSON(http.StatusBadRequest, utils.ErrorResponse{
+				Type:    "UNKNOWN_ERROR",
+				Message: resp.Message,
 			})
 			return
 		}
