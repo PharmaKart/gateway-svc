@@ -181,13 +181,19 @@ func GetPayment(paymentClient grpc.PaymentClient) gin.HandlerFunc {
 		userRole, ok := c.Get("user_role")
 		var customerID string
 		if !ok {
-			c.JSON(http.StatusUnauthorized, ErrorResponse{Error: "User Role not found in token"})
+			c.JSON(http.StatusUnauthorized, ErrorResponse{
+				Type:    "AUTH_ERROR",
+				Message: "User Role not found in token",
+			})
 			return
 		}
 
 		userId, ok := c.Get("user_id")
 		if !ok {
-			c.JSON(http.StatusUnauthorized, ErrorResponse{Error: "User ID not found in token"})
+			c.JSON(http.StatusUnauthorized, ErrorResponse{
+				Type:    "AUTH_ERROR",
+				Message: "User ID not found in token",
+			})
 			return
 		}
 
@@ -203,7 +209,10 @@ func GetPayment(paymentClient grpc.PaymentClient) gin.HandlerFunc {
 			CustomerId: customerID,
 		})
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
+			c.JSON(http.StatusInternalServerError, ErrorResponse{
+				Type:    "INTERNAL_ERROR",
+				Message: err.Error(),
+			})
 			return
 		}
 
@@ -227,13 +236,19 @@ func GetPaymentByOrderID(paymentClient grpc.PaymentClient) gin.HandlerFunc {
 		userRole, ok := c.Get("user_role")
 		var customerID string
 		if !ok {
-			c.JSON(http.StatusUnauthorized, ErrorResponse{Error: "User Role not found in token"})
+			c.JSON(http.StatusUnauthorized, ErrorResponse{
+				Type:    "AUTH_ERROR",
+				Message: "User Role not found in token",
+			})
 			return
 		}
 
 		userId, ok := c.Get("user_id")
 		if !ok {
-			c.JSON(http.StatusUnauthorized, ErrorResponse{Error: "User ID not found in token"})
+			c.JSON(http.StatusUnauthorized, ErrorResponse{
+				Type:    "AUTH_ERROR",
+				Message: "User ID not found in token",
+			})
 			return
 		}
 
@@ -249,7 +264,10 @@ func GetPaymentByOrderID(paymentClient grpc.PaymentClient) gin.HandlerFunc {
 			CustomerId: customerID,
 		})
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
+			c.JSON(http.StatusInternalServerError, ErrorResponse{
+				Type:    "INTERNAL_ERROR",
+				Message: err.Error(),
+			})
 			return
 		}
 

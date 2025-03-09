@@ -11,7 +11,6 @@ import (
 	"github.com/PharmaKart/gateway-svc/pkg/config"
 	"github.com/PharmaKart/gateway-svc/pkg/utils"
 
-	// "github.com/PharmaKart/gateway-svc/pkg/s3"
 	"github.com/gin-gonic/gin"
 )
 
@@ -59,12 +58,19 @@ type SwaggerProduct struct {
 // @Param requires_prescription formData boolean false "Requires Prescription" example:"true"
 // @Param image formData file false "Product Image"
 // @Success 200 {object} proto.CreateProductResponse
+// @Failure 400 {object} ErrorResponse
+// @Failure 409 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
 // @Router /api/v1/admin/products [post]
 func CreateProduct(cfg *config.Config, productClient grpc.ProductClient) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var req Product
 		if err := c.ShouldBind(&req); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			c.JSON(http.StatusBadRequest, ErrorResponse{
+				Type:    "VALIDATION_ERROR",
+				Message: "Invalid request format",
+				Details: map[string]string{"format": err.Error()},
+			})
 			return
 		}
 
@@ -75,14 +81,21 @@ func CreateProduct(cfg *config.Config, productClient grpc.ProductClient) gin.Han
 			allowedExtensions := map[string]bool{".jpg": true, ".jpeg": true, ".png": true}
 			ext := filepath.Ext(req.Image.Filename)
 			if !allowedExtensions[ext] {
-				c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid file type. Only .jpg, .jpeg, and .png are allowed"})
+				c.JSON(http.StatusBadRequest, ErrorResponse{
+					Type:    "VALIDATION_ERROR",
+					Message: "Invalid file format",
+					Details: map[string]string{"format": ext},
+				})
 				return
 			}
 
 			// Upload image to S3
 			imageURLResp, err := utils.UploadImageToS3(c, cfg, "products", req.Image)
 			if err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to upload image to S3: " + err.Error()})
+				c.JSON(http.StatusInternalServerError, ErrorResponse{
+					Type:    "INTERNAL_ERROR",
+					Message: "Failed to upload image",
+				})
 				return
 			}
 			imageURL = imageURLResp
@@ -101,7 +114,10 @@ func CreateProduct(cfg *config.Config, productClient grpc.ProductClient) gin.Han
 		})
 
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create product: " + err.Error()})
+			c.JSON(http.StatusInternalServerError, ErrorResponse{
+				Type:    "INTERNAL_ERROR",
+				Message: "Failed to create product",
+			})
 			return
 		}
 
@@ -126,7 +142,10 @@ func GetProduct(productClient grpc.ProductClient) gin.HandlerFunc {
 			ProductId: productID,
 		})
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get product: " + err.Error()})
+			c.JSON(http.StatusInternalServerError, ErrorResponse{
+				Type:    "INTERNAL_ERROR",
+				Message: "Failed to get product",
+			})
 			return
 		}
 
@@ -166,7 +185,10 @@ func GetProducts(productClient grpc.ProductClient) gin.HandlerFunc {
 			FilterValue: filterValue,
 		})
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get products: " + err.Error()})
+			c.JSON(http.StatusInternalServerError, ErrorResponse{
+				Type:    "INTERNAL_ERROR",
+				Message: "Failed to get products",
+			})
 			return
 		}
 
@@ -201,7 +223,10 @@ func UpdateProduct(productClient grpc.ProductClient) gin.HandlerFunc {
 			Product:   &req,
 		})
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update product: " + err.Error()})
+			c.JSON(http.StatusInternalServerError, ErrorResponse{
+				Type:    "INTERNAL_ERROR",
+				Message: "Failed to update product",
+			})
 			return
 		}
 
@@ -228,7 +253,10 @@ func DeleteProduct(productClient grpc.ProductClient) gin.HandlerFunc {
 			ProductId: productID,
 		})
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete product: " + err.Error()})
+			c.JSON(http.StatusInternalServerError, ErrorResponse{
+				Type:    "INTERNAL_ERROR",
+				Message: "Failed to delete product",
+			})
 			return
 		}
 
@@ -259,7 +287,11 @@ func UpdateStock(productClient grpc.ProductClient) gin.HandlerFunc {
 
 		var req proto.UpdateStockRequest
 		if err := c.ShouldBindJSON(&req); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			c.JSON(http.StatusBadRequest, ErrorResponse{
+				Type:    "VALIDATION_ERROR",
+				Message: "Invalid request format",
+				Details: map[string]string{"format": err.Error()},
+			})
 			return
 		}
 
@@ -269,7 +301,10 @@ func UpdateStock(productClient grpc.ProductClient) gin.HandlerFunc {
 			Reason:         req.Reason,
 		})
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update stock: " + err.Error()})
+			c.JSON(http.StatusInternalServerError, ErrorResponse{
+				Type:    "INTERNAL_ERROR",
+				Message: "Failed to update stock",
+			})
 			return
 		}
 

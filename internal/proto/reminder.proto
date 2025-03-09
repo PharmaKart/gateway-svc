@@ -2,6 +2,8 @@ syntax = "proto3";
 
 package reminder;
 
+import "common.proto";
+
 option go_package = "../proto";
 
 service ReminderService {
@@ -42,6 +44,7 @@ message ScheduleReminderRequest {
 
 message ScheduleReminderResponse {
     string reminder_id = 1;
+    common.Error error = 2;
 }
 
 message ListRemindersRequest {
@@ -58,6 +61,7 @@ message ListRemindersResponse {
     int32 total = 2;
     int32 page = 3;
     int32 limit = 4;
+    common.Error error = 5;
 }
 
 message ListCustomerRemindersRequest {
@@ -79,6 +83,7 @@ message UpdateReminderRequest {
 
 message UpdateReminderResponse {
     string message = 1;
+    common.Error error = 2;
 }
 
 message DeleteReminderRequest {
@@ -88,6 +93,7 @@ message DeleteReminderRequest {
 
 message DeleteReminderResponse {
     string message = 1;
+    common.Error error = 2;
 }
 
 message ToggleReminderRequest {
@@ -97,6 +103,7 @@ message ToggleReminderRequest {
 
 message ToggleReminderResponse {
     string message = 1;
+    common.Error error = 2;
 }
 
 message ListReminderLogsRequest {
@@ -115,4 +122,5 @@ message ListReminderLogsResponse {
     int32 total = 2;
     int32 page = 3;
     int32 limit = 4;
+    common.Error error = 5;
 }

@@ -2,6 +2,8 @@ syntax = "proto3";
 
 package auth;
 
+import "common.proto";
+
 option go_package = "../proto";
 
 service AuthService {
@@ -29,6 +31,7 @@ message RegisterRequest {
 message RegisterResponse {
     bool success = 1;
     string message = 2;
+    common.Error error = 3;
 }
 
 message LoginRequest {
@@ -42,7 +45,9 @@ message LoginResponse {
     string message = 2;
     string token = 3;
     string user_id = 4;
-    string role = 5; // customer or admin
+    string username = 5;
+    string role = 6; // customer or admin
+    common.Error error = 7;
 }
 
 message VerifyTokenRequest {
@@ -54,4 +59,5 @@ message VerifyTokenResponse {
     string message = 2;
     string user_id = 3;
     string role = 4;
+    common.Error error = 5;
 }
