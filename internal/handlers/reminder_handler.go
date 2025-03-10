@@ -90,7 +90,8 @@ func ScheduleReminder(reminderClient grpc.ReminderClient) gin.HandlerFunc {
 // @Param limit query int false "Number of items per page"
 // @Param sort_by query string false "Sort by field"
 // @Param sort_order query string false "Sort order (asc/desc)"
-// @Param filter query string false "Filter field"
+// @Param filter_column query string false "Filter column"
+// @Param filter_operator query string false "Filter operator"
 // @Param filter_value query string false "Filter value"
 // @Success 200 {object} proto.ListRemindersResponse
 // @Failure 401 {object} utils.ErrorResponse
@@ -98,20 +99,30 @@ func ScheduleReminder(reminderClient grpc.ReminderClient) gin.HandlerFunc {
 // @Router /api/v1/admin/reminders [get]
 func ListReminders(reminderClient grpc.ReminderClient) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		page := utils.GetIntQueryParam(c, "page", 1)
-		limit := utils.GetIntQueryParam(c, "limit", 10)
 		sortBy := c.Query("sort_by")
 		sortOrder := c.Query("sort_order")
-		filter := c.Query("filter")
-		filterValue := c.Query("filter_value")
+		page := utils.GetIntQueryParam(c, "page", 1)
+		limit := utils.GetIntQueryParam(c, "limit", 0)
+
+		column := c.Query("filter_column")
+		operator := c.Query("filter_operator")
+		value := c.Query("filter_value")
+
+		var filter *proto.Filter
+		if column != "" && operator != "" && value != "" {
+			filter = &proto.Filter{
+				Column:   column,
+				Operator: operator,
+				Value:    value,
+			}
+		}
 
 		resp, err := reminderClient.ListReminders(context.Background(), &proto.ListRemindersRequest{
-			Page:        int32(page),
-			Limit:       int32(limit),
-			SortBy:      sortBy,
-			SortOrder:   sortOrder,
-			Filter:      filter,
-			FilterValue: filterValue,
+			Filter:    filter,
+			SortBy:    sortBy,
+			SortOrder: sortOrder,
+			Page:      int32(page),
+			Limit:     int32(limit),
 		})
 		if err != nil {
 			utils.Error("Failed to get reminders", map[string]interface{}{
@@ -159,7 +170,8 @@ func ListReminders(reminderClient grpc.ReminderClient) gin.HandlerFunc {
 // @Param limit query int false "Number of items per page"
 // @Param sort_by query string false "Sort by field"
 // @Param sort_order query string false "Sort order (asc/desc)"
-// @Param filter query string false "Filter field"
+// @Param filter_column query string false "Filter column"
+// @Param filter_operator query string false "Filter operator"
 // @Param filter_value query string false "Filter value"
 // @Success 200 {object} proto.ListRemindersResponse
 // @Failure 401 {object} utils.ErrorResponse
@@ -176,21 +188,31 @@ func ListCustomerReminders(reminderClient grpc.ReminderClient) gin.HandlerFunc {
 			return
 		}
 
-		page := utils.GetIntQueryParam(c, "page", 1)
-		limit := utils.GetIntQueryParam(c, "limit", 10)
 		sortBy := c.Query("sort_by")
 		sortOrder := c.Query("sort_order")
-		filter := c.Query("filter")
-		filterValue := c.Query("filter_value")
+		page := utils.GetIntQueryParam(c, "page", 1)
+		limit := utils.GetIntQueryParam(c, "limit", 0)
+
+		column := c.Query("filter_column")
+		operator := c.Query("filter_operator")
+		value := c.Query("filter_value")
+
+		var filter *proto.Filter
+		if column != "" && operator != "" && value != "" {
+			filter = &proto.Filter{
+				Column:   column,
+				Operator: operator,
+				Value:    value,
+			}
+		}
 
 		resp, err := reminderClient.ListCustomerReminders(context.Background(), &proto.ListCustomerRemindersRequest{
-			CustomerId:  customerID.(string),
-			Page:        int32(page),
-			Limit:       int32(limit),
-			SortBy:      sortBy,
-			SortOrder:   sortOrder,
-			Filter:      filter,
-			FilterValue: filterValue,
+			CustomerId: customerID.(string),
+			Filter:     filter,
+			SortBy:     sortBy,
+			SortOrder:  sortOrder,
+			Page:       int32(page),
+			Limit:      int32(limit),
 		})
 		if err != nil {
 			utils.Error("Failed to get reminders", map[string]interface{}{
@@ -439,7 +461,8 @@ func ToggleReminder(reminderClient grpc.ReminderClient) gin.HandlerFunc {
 // @Param limit query int false "Number of items per page"
 // @Param sort_by query string false "Sort by field"
 // @Param sort_order query string false "Sort order (asc/desc)"
-// @Param filter query string false "Filter field"
+// @Param filter_column query string false "Filter column"
+// @Param filter_operator query string false "Filter operator"
 // @Param filter_value query string false "Filter value"
 // @Success 200 {object} proto.ListReminderLogsResponse
 // @Failure 401 {object} utils.ErrorResponse
@@ -470,22 +493,33 @@ func ListReminderLogs(reminderClient grpc.ReminderClient) gin.HandlerFunc {
 		}
 
 		reminderID := c.Param("reminder_id")
-		page := utils.GetIntQueryParam(c, "page", 1)
-		limit := utils.GetIntQueryParam(c, "limit", 10)
+
 		sortBy := c.Query("sort_by")
 		sortOrder := c.Query("sort_order")
-		filter := c.Query("filter")
-		filterValue := c.Query("filter_value")
+		page := utils.GetIntQueryParam(c, "page", 1)
+		limit := utils.GetIntQueryParam(c, "limit", 0)
+
+		column := c.Query("filter_column")
+		operator := c.Query("filter_operator")
+		value := c.Query("filter_value")
+
+		var filter *proto.Filter
+		if column != "" && operator != "" && value != "" {
+			filter = &proto.Filter{
+				Column:   column,
+				Operator: operator,
+				Value:    value,
+			}
+		}
 
 		resp, err := reminderClient.ListReminderLogs(context.Background(), &proto.ListReminderLogsRequest{
-			CustomerId:  customerID.(string),
-			ReminderId:  reminderID,
-			Page:        int32(page),
-			Limit:       int32(limit),
-			SortBy:      sortBy,
-			SortOrder:   sortOrder,
-			Filter:      filter,
-			FilterValue: filterValue,
+			CustomerId: customerID.(string),
+			ReminderId: reminderID,
+			Filter:     filter,
+			SortBy:     sortBy,
+			SortOrder:  sortOrder,
+			Page:       int32(page),
+			Limit:      int32(limit),
 		})
 		if err != nil {
 			utils.Error("Failed to get reminder logs", map[string]interface{}{

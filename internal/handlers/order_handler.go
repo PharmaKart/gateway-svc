@@ -280,7 +280,8 @@ func GetOrder(orderClient grpc.OrderClient) gin.HandlerFunc {
 // @Param limit query int false "Page limit"
 // @Param sort_by query string false "Sort by field"
 // @Param sort_order query string false "Sort order (asc/desc)"
-// @Param filter query string false "Filter field"
+// @Param filter_column query string false "Filter column"
+// @Param filter_operator query string false "Filter operator"
 // @Param filter_value query string false "Filter value"
 // @Success 200 {object} proto.ListCustomersOrdersResponse
 // @Failure 400 {object} ErrorResponse
@@ -298,21 +299,31 @@ func ListCustomersOrders(orderClient grpc.OrderClient) gin.HandlerFunc {
 			return
 		}
 
-		page := utils.GetIntQueryParam(c, "page", 1)
-		limit := utils.GetIntQueryParam(c, "limit", 10)
 		sortBy := c.Query("sort_by")
 		sortOrder := c.Query("sort_order")
-		filter := c.Query("filter")
-		filterValue := c.Query("filter_value")
+		page := utils.GetIntQueryParam(c, "page", 1)
+		limit := utils.GetIntQueryParam(c, "limit", 0)
+
+		column := c.Query("filter_column")
+		operator := c.Query("filter_operator")
+		value := c.Query("filter_value")
+
+		var filter *proto.Filter
+		if column != "" && operator != "" && value != "" {
+			filter = &proto.Filter{
+				Column:   column,
+				Operator: operator,
+				Value:    value,
+			}
+		}
 
 		resp, err := orderClient.ListCustomersOrders(c.Request.Context(), &proto.ListCustomersOrdersRequest{
-			CustomerId:  customerID.(string),
-			Page:        int32(page),
-			Limit:       int32(limit),
-			SortBy:      sortBy,
-			SortOrder:   sortOrder,
-			Filter:      filter,
-			FilterValue: filterValue,
+			CustomerId: customerID.(string),
+			Filter:     filter,
+			SortBy:     sortBy,
+			SortOrder:  sortOrder,
+			Page:       int32(page),
+			Limit:      int32(limit),
 		})
 		if err != nil {
 			utils.Error("Failed to list orders", map[string]interface{}{
@@ -361,7 +372,8 @@ func ListCustomersOrders(orderClient grpc.OrderClient) gin.HandlerFunc {
 // @Param limit query int false "Page limit"
 // @Param sort_by query string false "Sort by field"
 // @Param sort_order query string false "Sort order (asc/desc)"
-// @Param filter query string false "Filter field"
+// @Param filter_column query string false "Filter column"
+// @Param filter_operator query string false "Filter operator"
 // @Param filter_value query string false "Filter value"
 // @Success 200 {object} proto.ListAllOrdersResponse
 // @Failure 400 {object} ErrorResponse
@@ -371,19 +383,30 @@ func ListCustomersOrders(orderClient grpc.OrderClient) gin.HandlerFunc {
 // @Router /api/v1/admin/orders [get]
 func ListAllOrders(orderClient grpc.OrderClient) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		page := utils.GetIntQueryParam(c, "page", 1)
-		limit := utils.GetIntQueryParam(c, "limit", 10)
 		sortBy := c.Query("sort_by")
 		sortOrder := c.Query("sort_order")
-		filter := c.Query("filter")
-		filterValue := c.Query("filter_value")
+		page := utils.GetIntQueryParam(c, "page", 1)
+		limit := utils.GetIntQueryParam(c, "limit", 0)
+
+		column := c.Query("filter_column")
+		operator := c.Query("filter_operator")
+		value := c.Query("filter_value")
+
+		var filter *proto.Filter
+		if column != "" && operator != "" && value != "" {
+			filter = &proto.Filter{
+				Column:   column,
+				Operator: operator,
+				Value:    value,
+			}
+		}
+
 		resp, err := orderClient.ListAllOrders(c.Request.Context(), &proto.ListAllOrdersRequest{
-			Page:        int32(page),
-			Limit:       int32(limit),
-			SortBy:      sortBy,
-			SortOrder:   sortOrder,
-			Filter:      filter,
-			FilterValue: filterValue,
+			Filter:    filter,
+			SortBy:    sortBy,
+			SortOrder: sortOrder,
+			Page:      int32(page),
+			Limit:     int32(limit),
 		})
 		if err != nil {
 			utils.Error("Failed to list orders", map[string]interface{}{

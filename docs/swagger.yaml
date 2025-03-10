@@ -1,7 +1,18 @@
 definitions:
   handlers.ErrorResponse:
+    description: Error response
     properties:
-      error:
+      details:
+        additionalProperties:
+          type: string
+        example:
+          field: error message
+        type: object
+      message:
+        example: Invalid request format
+        type: string
+      type:
+        example: VALIDATION_ERROR
         type: string
     type: object
   handlers.HealthResponse:
@@ -103,6 +114,8 @@ definitions:
     properties:
       description:
         type: string
+      error:
+        $ref: '#/definitions/proto.Error'
       id:
         type: string
       image_url:
@@ -115,18 +128,196 @@ definitions:
         type: boolean
       stock:
         type: integer
+      success:
+        type: boolean
     type: object
   proto.DeleteProductResponse:
     properties:
+      error:
+        $ref: '#/definitions/proto.Error'
       message:
         type: string
+      success:
+        type: boolean
     type: object
   proto.DeleteReminderResponse:
     properties:
+      error:
+        $ref: '#/definitions/proto.Error'
       message:
+        type: string
+      success:
+        type: boolean
+    type: object
+  proto.Error:
+    properties:
+      details:
+        items:
+          $ref: '#/definitions/proto.KeyValuePair'
+        type: array
+      message:
+        type: string
+      type:
         type: string
     type: object
   proto.GetOrderResponse:
+    properties:
+      customer_id:
+        type: string
+      error:
+        $ref: '#/definitions/proto.Error'
+      items:
+        items:
+          $ref: '#/definitions/proto.OrderItem'
+        type: array
+      order_id:
+        type: string
+      prescription_url:
+        type: string
+      status:
+        type: string
+      success:
+        type: boolean
+    type: object
+  proto.GetPaymentResponse:
+    properties:
+      amount:
+        type: number
+      customer_id:
+        type: string
+      error:
+        $ref: '#/definitions/proto.Error'
+      order_id:
+        type: string
+      payment_id:
+        type: string
+      status:
+        type: string
+      success:
+        type: boolean
+      transaction_id:
+        type: string
+    type: object
+  proto.GetProductResponse:
+    properties:
+      error:
+        $ref: '#/definitions/proto.Error'
+      product:
+        $ref: '#/definitions/proto.Product'
+      success:
+        type: boolean
+    type: object
+  proto.KeyValuePair:
+    properties:
+      key:
+        type: string
+      value:
+        type: string
+    type: object
+  proto.ListAllOrdersResponse:
+    properties:
+      error:
+        $ref: '#/definitions/proto.Error'
+      limit:
+        type: integer
+      orders:
+        items:
+          $ref: '#/definitions/proto.Order'
+        type: array
+      page:
+        type: integer
+      success:
+        type: boolean
+      total:
+        type: integer
+    type: object
+  proto.ListCustomersOrdersResponse:
+    properties:
+      error:
+        $ref: '#/definitions/proto.Error'
+      limit:
+        type: integer
+      orders:
+        items:
+          $ref: '#/definitions/proto.Order'
+        type: array
+      page:
+        type: integer
+      success:
+        type: boolean
+      total:
+        type: integer
+    type: object
+  proto.ListProductsResponse:
+    properties:
+      error:
+        $ref: '#/definitions/proto.Error'
+      limit:
+        type: integer
+      page:
+        type: integer
+      products:
+        items:
+          $ref: '#/definitions/proto.Product'
+        type: array
+      success:
+        type: boolean
+      total:
+        type: integer
+    type: object
+  proto.ListReminderLogsResponse:
+    properties:
+      error:
+        $ref: '#/definitions/proto.Error'
+      limit:
+        type: integer
+      logs:
+        items:
+          $ref: '#/definitions/proto.ReminderLog'
+        type: array
+      page:
+        type: integer
+      success:
+        type: boolean
+      total:
+        type: integer
+    type: object
+  proto.ListRemindersResponse:
+    properties:
+      error:
+        $ref: '#/definitions/proto.Error'
+      limit:
+        type: integer
+      page:
+        type: integer
+      reminders:
+        items:
+          $ref: '#/definitions/proto.Reminder'
+        type: array
+      success:
+        type: boolean
+      total:
+        type: integer
+    type: object
+  proto.LoginResponse:
+    properties:
+      error:
+        $ref: '#/definitions/proto.Error'
+      message:
+        type: string
+      role:
+        description: customer or admin
+        type: string
+      success:
+        type: boolean
+      token:
+        type: string
+      user_id:
+        type: string
+      username:
+        type: string
+    type: object
+  proto.Order:
     properties:
       customer_id:
         type: string
@@ -139,105 +330,6 @@ definitions:
       prescription_url:
         type: string
       status:
-        type: string
-    type: object
-  proto.GetPaymentResponse:
-    properties:
-      amount:
-        type: number
-      customer_id:
-        type: string
-      order_id:
-        type: string
-      payment_id:
-        type: string
-      status:
-        type: string
-      transaction_id:
-        type: string
-    type: object
-  proto.GetProductResponse:
-    properties:
-      product:
-        $ref: '#/definitions/proto.Product'
-    type: object
-  proto.ListAllOrdersResponse:
-    properties:
-      limit:
-        type: integer
-      orders:
-        items:
-          $ref: '#/definitions/proto.GetOrderResponse'
-        type: array
-      page:
-        type: integer
-      total:
-        type: integer
-    type: object
-  proto.ListCustomersOrdersResponse:
-    properties:
-      limit:
-        type: integer
-      orders:
-        items:
-          $ref: '#/definitions/proto.GetOrderResponse'
-        type: array
-      page:
-        type: integer
-      total:
-        type: integer
-    type: object
-  proto.ListProductsResponse:
-    properties:
-      limit:
-        type: integer
-      page:
-        type: integer
-      products:
-        items:
-          $ref: '#/definitions/proto.Product'
-        type: array
-      total:
-        type: integer
-    type: object
-  proto.ListReminderLogsResponse:
-    properties:
-      limit:
-        type: integer
-      logs:
-        items:
-          $ref: '#/definitions/proto.ReminderLog'
-        type: array
-      page:
-        type: integer
-      total:
-        type: integer
-    type: object
-  proto.ListRemindersResponse:
-    properties:
-      limit:
-        type: integer
-      page:
-        type: integer
-      reminders:
-        items:
-          $ref: '#/definitions/proto.Reminder'
-        type: array
-      total:
-        type: integer
-    type: object
-  proto.LoginResponse:
-    properties:
-      message:
-        type: string
-      role:
-        description: customer or admin
-        type: string
-      success:
-        type: boolean
-      token:
-        type: string
-      user_id:
         type: string
     type: object
   proto.OrderItem:
@@ -253,10 +345,14 @@ definitions:
     type: object
   proto.PlaceOrderResponse:
     properties:
+      error:
+        $ref: '#/definitions/proto.Error'
       order_id:
         type: string
       payment_url:
         type: string
+      success:
+        type: boolean
     type: object
   proto.Product:
     properties:
@@ -277,6 +373,8 @@ definitions:
     type: object
   proto.RegisterResponse:
     properties:
+      error:
+        $ref: '#/definitions/proto.Error'
       message:
         type: string
       success:
@@ -316,32 +414,67 @@ definitions:
     type: object
   proto.ScheduleReminderResponse:
     properties:
+      error:
+        $ref: '#/definitions/proto.Error'
       reminder_id:
         type: string
+      success:
+        type: boolean
     type: object
   proto.ToggleReminderResponse:
     properties:
+      error:
+        $ref: '#/definitions/proto.Error'
       message:
         type: string
+      success:
+        type: boolean
     type: object
   proto.UpdateOrderStatusResponse:
     properties:
+      error:
+        $ref: '#/definitions/proto.Error'
       message:
         type: string
+      success:
+        type: boolean
     type: object
   proto.UpdateProductResponse:
     properties:
+      error:
+        $ref: '#/definitions/proto.Error'
       message:
         type: string
+      success:
+        type: boolean
     type: object
   proto.UpdateReminderResponse:
     properties:
+      error:
+        $ref: '#/definitions/proto.Error'
       message:
         type: string
+      success:
+        type: boolean
     type: object
   proto.UpdateStockResponse:
     properties:
+      error:
+        $ref: '#/definitions/proto.Error'
       message:
+        type: string
+      success:
+        type: boolean
+    type: object
+  utils.ErrorResponse:
+    properties:
+      details:
+        additionalProperties:
+          type: string
+        type: object
+      message:
+        type: string
+      type:
         type: string
     type: object
 info:
@@ -374,9 +507,13 @@ paths:
         in: query
         name: sort_order
         type: string
-      - description: Filter field
+      - description: Filter column
         in: query
-        name: filter
+        name: filter_column
+        type: string
+      - description: Filter operator
+        in: query
+        name: filter_operator
         type: string
       - description: Filter value
         in: query
@@ -389,6 +526,22 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/proto.ListAllOrdersResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
       security:
       - ApiKeyAuth: []
       summary: List all orders
@@ -423,6 +576,26 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/proto.UpdateOrderStatusResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
       security:
       - ApiKeyAuth: []
       summary: Update an order
@@ -474,6 +647,26 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/proto.CreateProductResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
       security:
       - ApiKeyAuth: []
       summary: Add a new product
@@ -502,6 +695,26 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/proto.DeleteProductResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
       security:
       - ApiKeyAuth: []
       summary: Delete a product
@@ -535,6 +748,26 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/proto.UpdateProductResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
       security:
       - ApiKeyAuth: []
       summary: Update a product
@@ -569,6 +802,26 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/proto.UpdateStockResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
       security:
       - ApiKeyAuth: []
       summary: Update stock
@@ -601,9 +854,13 @@ paths:
         in: query
         name: sort_order
         type: string
-      - description: Filter field
+      - description: Filter column
         in: query
-        name: filter
+        name: filter_column
+        type: string
+      - description: Filter operator
+        in: query
+        name: filter_operator
         type: string
       - description: Filter value
         in: query
@@ -616,6 +873,14 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/proto.ListRemindersResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
       security:
       - ApiKeyAuth: []
       summary: List reminders
@@ -642,6 +907,14 @@ paths:
             $ref: '#/definitions/proto.LoginResponse'
         "400":
           description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "404":
+          description: Not Found
           schema:
             $ref: '#/definitions/handlers.ErrorResponse'
         "500":
@@ -678,9 +951,13 @@ paths:
         in: query
         name: sort_order
         type: string
-      - description: Filter field
+      - description: Filter column
         in: query
-        name: filter
+        name: filter_column
+        type: string
+      - description: Filter operator
+        in: query
+        name: filter_operator
         type: string
       - description: Filter value
         in: query
@@ -693,6 +970,18 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/proto.ListCustomersOrdersResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
       security:
       - ApiKeyAuth: []
       summary: List all orders
@@ -724,6 +1013,22 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/proto.PlaceOrderResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
       security:
       - ApiKeyAuth: []
       summary: Place a new order
@@ -752,6 +1057,22 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/proto.GetOrderResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
       security:
       - ApiKeyAuth: []
       summary: Get an order
@@ -780,6 +1101,26 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/proto.GetPaymentResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
       security:
       - ApiKeyAuth: []
       summary: Get a payment
@@ -808,6 +1149,26 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/proto.GetPaymentResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
       security:
       - ApiKeyAuth: []
       summary: Get a payment by order ID
@@ -827,7 +1188,7 @@ paths:
         in: query
         name: limit
         type: integer
-      - description: Sort by field
+      - description: Sort by column
         in: query
         name: sort_by
         type: string
@@ -835,9 +1196,13 @@ paths:
         in: query
         name: sort_order
         type: string
-      - description: Filter field
+      - description: Filter column
         in: query
-        name: filter
+        name: filter_column
+        type: string
+      - description: Filter operator
+        in: query
+        name: filter_operator
         type: string
       - description: Filter value
         in: query
@@ -850,6 +1215,14 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/proto.ListProductsResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
       summary: Get all products
       tags:
       - Products
@@ -871,6 +1244,18 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/proto.GetProductResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
       summary: Get a product
       tags:
       - Products
@@ -895,6 +1280,10 @@ paths:
             $ref: '#/definitions/proto.RegisterResponse'
         "400":
           description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "409":
+          description: Conflict
           schema:
             $ref: '#/definitions/handlers.ErrorResponse'
         "500":
@@ -936,9 +1325,13 @@ paths:
         in: query
         name: sort_order
         type: string
-      - description: Filter field
+      - description: Filter column
         in: query
-        name: filter
+        name: filter_column
+        type: string
+      - description: Filter operator
+        in: query
+        name: filter_operator
         type: string
       - description: Filter value
         in: query
@@ -951,6 +1344,14 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/proto.ListRemindersResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
       security:
       - ApiKeyAuth: []
       summary: List customer reminders
@@ -979,6 +1380,18 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/proto.ScheduleReminderResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
       security:
       - ApiKeyAuth: []
       summary: Schedule a reminder
@@ -1007,6 +1420,14 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/proto.DeleteReminderResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
       security:
       - ApiKeyAuth: []
       summary: Delete a reminder
@@ -1034,6 +1455,14 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/proto.ToggleReminderResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
       security:
       - ApiKeyAuth: []
       summary: Toggle a reminder
@@ -1067,6 +1496,18 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/proto.UpdateReminderResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
       security:
       - ApiKeyAuth: []
       summary: Update a reminder
@@ -1104,9 +1545,13 @@ paths:
         in: query
         name: sort_order
         type: string
-      - description: Filter field
+      - description: Filter column
         in: query
-        name: filter
+        name: filter_column
+        type: string
+      - description: Filter operator
+        in: query
+        name: filter_operator
         type: string
       - description: Filter value
         in: query
@@ -1119,11 +1564,40 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/proto.ListReminderLogsResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
       security:
       - ApiKeyAuth: []
       summary: List reminder logs
       tags:
       - Reminders
+  /api/v1/webhook:
+    post:
+      consumes:
+      - application/json
+      description: Processes incoming Stripe webhook events
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "503":
+          description: Service Unavailable
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      summary: Process Stripe webhook
+      tags:
+      - Payments
   /health:
     get:
       description: Check if the service is running
