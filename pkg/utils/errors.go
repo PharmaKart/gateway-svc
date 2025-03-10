@@ -37,6 +37,8 @@ func ConvertProtoErrorToResponse(protoError *proto.Error) (ErrorResponse, int) {
 		statusCode = http.StatusUnauthorized
 	case "NOT_FOUND_ERROR":
 		statusCode = http.StatusNotFound
+	case "BAD_REQUEST_ERROR":
+		statusCode = http.StatusBadRequest
 	case "CONFLICT_ERROR":
 		statusCode = http.StatusConflict
 	case "INTERNAL_ERROR":

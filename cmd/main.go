@@ -94,7 +94,7 @@ func main() {
 	r := gin.Default()
 
 	// Set to Release mode once in production
-	gin.SetMode(gin.DebugMode)
+	gin.SetMode(gin.ReleaseMode)
 
 	// Add Swagger documentation
 	docs.SwaggerInfo.Title = "PharmaKart Gateway API"

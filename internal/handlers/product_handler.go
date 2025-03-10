@@ -224,9 +224,10 @@ func GetProduct(productClient grpc.ProductClient) gin.HandlerFunc {
 // @Produce json
 // @Param page query integer false "Page number"
 // @Param limit query integer false "Number of items per page"
-// @Param sort_by query string false "Sort by field"
+// @Param sort_by query string false "Sort by column"
 // @Param sort_order query string false "Sort order (asc/desc)"
-// @Param filter query string false "Filter field"
+// @Param filter_column query string false "Filter column"
+// @Param filter_operator query string false "Filter operator"
 // @Param filter_value query string false "Filter value"
 // @Success 200 {object} proto.ListProductsResponse
 // @Failure 400 {object} utils.ErrorResponse "Bad Request"
@@ -234,21 +235,32 @@ func GetProduct(productClient grpc.ProductClient) gin.HandlerFunc {
 // @Router /api/v1/products [get]
 func GetProducts(productClient grpc.ProductClient) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		page := utils.GetIntQueryParam(c, "page", 1)
-		limit := utils.GetIntQueryParam(c, "limit", 10)
 		sortBy := c.Query("sort_by")
 		sortOrder := c.Query("sort_order")
-		filter := c.Query("filter")
-		filterValue := c.Query("filter_value")
+		page := utils.GetIntQueryParam(c, "page", 1)
+		limit := utils.GetIntQueryParam(c, "limit", 0)
+
+		column := c.Query("filter_column")
+		operator := c.Query("filter_operator")
+		value := c.Query("filter_value")
+
+		var filter *proto.Filter
+		if column != "" && operator != "" && value != "" {
+			filter = &proto.Filter{
+				Column:   column,
+				Operator: operator,
+				Value:    value,
+			}
+		}
 
 		resp, err := productClient.ListProducts(context.Background(), &proto.ListProductsRequest{
-			Page:        int32(page),
-			Limit:       int32(limit),
-			SortBy:      sortBy,
-			SortOrder:   sortOrder,
-			Filter:      filter,
-			FilterValue: filterValue,
+			Filter:    filter,
+			SortBy:    sortBy,
+			SortOrder: sortOrder,
+			Page:      int32(page),
+			Limit:     int32(limit),
 		})
+
 		if err != nil {
 			utils.Error("Failed to get products", map[string]interface{}{
 				"error": err,
