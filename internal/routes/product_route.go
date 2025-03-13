@@ -20,5 +20,6 @@ func RegisterProductRoutes(r *gin.RouterGroup, cfg *config.Config, authClient gr
 		admin.PUT("/products/:id", handlers.UpdateProduct(productClient))
 		admin.DELETE("/products/:id", handlers.DeleteProduct(productClient))
 		admin.PUT("/products/:id/stock", handlers.UpdateStock(productClient))
+		admin.GET("/products/:id/logs", handlers.GetInventoryLogs(productClient))
 	}
 }
