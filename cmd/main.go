@@ -90,11 +90,11 @@ func main() {
 	reminderClient := grpc.NewReminderServiceClient(reminderConn.Conn())
 	defer reminderConn.Close()
 
-	// Initialize Gin router
-	r := gin.Default()
-
 	// Set to Release mode once in production
 	gin.SetMode(gin.ReleaseMode)
+
+	// Initialize Gin router
+	r := gin.Default()
 
 	// Add Swagger documentation
 	docs.SwaggerInfo.Title = "PharmaKart Gateway API"
