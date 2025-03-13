@@ -512,3 +512,91 @@ func UpdateStock(productClient grpc.ProductClient) gin.HandlerFunc {
 		c.JSON(http.StatusOK, resp)
 	}
 }
+
+// GetInventoryLogs fetches inventory logs for a product
+// @Summary Get inventory logs
+// @Description Fetches inventory logs for a specific product
+// @Tags Products
+// @Accept json
+// @Produce json
+// @Security ApiKeyAuth
+// @Param Authorization header string true "Bearer token"
+// @Param id path string true "Product ID"
+// @Param page query integer false "Page number"
+// @Param limit query integer false "Number of items per page"
+// @Param sort_by query string false "Sort by column"
+// @Param sort_order query string false "Sort order (asc/desc)"
+// @Param filter_column query string false "Filter column"
+// @Param filter_operator query string false "Filter operator"
+// @Param filter_value query string false "Filter value"
+// @Success 200 {object} proto.GetInventoryLogsResponse
+// @Failure 400 {object} utils.ErrorResponse "Bad Request"
+// @Failure 401 {object} utils.ErrorResponse "Unauthorized"
+// @Failure 403 {object} utils.ErrorResponse "Forbidden"
+// @Failure 404 {object} utils.ErrorResponse "Not Found"
+// @Failure 500 {object} utils.ErrorResponse "Internal Server Error"
+// @Router /api/v1/admin/products/{id}/logs [get]
+func GetInventoryLogs(productClient grpc.ProductClient) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		productID := c.Param("id")
+		sortBy := c.Query("sort_by")
+		sortOrder := c.Query("sort_order")
+		page := utils.GetIntQueryParam(c, "page", 1)
+		limit := utils.GetIntQueryParam(c, "limit", 0)
+
+		column := c.Query("filter_column")
+		operator := c.Query("filter_operator")
+		value := c.Query("filter_value")
+
+		var filter *proto.Filter
+		if column != "" && operator != "" && value != "" {
+			filter = &proto.Filter{
+				Column:   column,
+				Operator: operator,
+				Value:    value,
+			}
+		}
+
+		resp, err := productClient.GetInventoryLogs(context.Background(), &proto.GetInventoryLogsRequest{
+			ProductId: productID,
+			Filter:    filter,
+			SortBy:    sortBy,
+			SortOrder: sortOrder,
+			Page:      int32(page),
+			Limit:     int32(limit),
+		})
+
+		if err != nil {
+			utils.Error("Failed to get inventory logs", map[string]interface{}{
+				"error":      err,
+				"product_id": productID,
+			})
+			c.JSON(http.StatusInternalServerError, utils.ErrorResponse{
+				Type:    "INTERNAL_ERROR",
+				Message: "Failed to get inventory logs",
+				Details: map[string]string{"error": err.Error()},
+			})
+			return
+		}
+
+		if !resp.Success {
+			utils.Error("Failed to get inventory logs", map[string]interface{}{
+				"error": resp,
+			})
+
+			if resp.Error != nil {
+				errorResp, statusCode := utils.ConvertProtoErrorToResponse(resp.Error)
+				c.JSON(statusCode, errorResp)
+				return
+			}
+
+			c.JSON(http.StatusBadRequest, utils.ErrorResponse{
+				Type:    "UNKNOWN_ERROR",
+				Message: "Failed to get inventory logs",
+			})
+			return
+		}
+
+		c.JSON(http.StatusOK, resp)
+	}
+}

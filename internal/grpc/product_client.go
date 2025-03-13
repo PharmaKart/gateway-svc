@@ -14,6 +14,7 @@ type ProductClient interface {
 	UpdateProduct(ctx context.Context, req *proto.UpdateProductRequest) (*proto.UpdateProductResponse, error)
 	DeleteProduct(ctx context.Context, req *proto.DeleteProductRequest) (*proto.DeleteProductResponse, error)
 	UpdateStock(ctx context.Context, req *proto.UpdateStockRequest) (*proto.UpdateStockResponse, error)
+	GetInventoryLogs(ctx context.Context, req *proto.GetInventoryLogsRequest) (*proto.GetInventoryLogsResponse, error)
 }
 
 type productClient struct {
@@ -48,4 +49,8 @@ func (c *productClient) DeleteProduct(ctx context.Context, req *proto.DeleteProd
 
 func (c *productClient) UpdateStock(ctx context.Context, req *proto.UpdateStockRequest) (*proto.UpdateStockResponse, error) {
 	return c.client.UpdateStock(ctx, req)
+}
+
+func (c *productClient) GetInventoryLogs(ctx context.Context, req *proto.GetInventoryLogsRequest) (*proto.GetInventoryLogsResponse, error) {
+	return c.client.GetInventoryLogs(ctx, req)
 }

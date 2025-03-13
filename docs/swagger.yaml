@@ -160,6 +160,23 @@ definitions:
       type:
         type: string
     type: object
+  proto.GetInventoryLogsResponse:
+    properties:
+      error:
+        $ref: '#/definitions/proto.Error'
+      limit:
+        type: integer
+      logs:
+        items:
+          $ref: '#/definitions/proto.InventoryLog'
+        type: array
+      page:
+        type: integer
+      success:
+        type: boolean
+      total:
+        type: integer
+    type: object
   proto.GetOrderResponse:
     properties:
       customer_id:
@@ -206,6 +223,19 @@ definitions:
         $ref: '#/definitions/proto.Product'
       success:
         type: boolean
+    type: object
+  proto.InventoryLog:
+    properties:
+      change_type:
+        type: string
+      created_at:
+        type: string
+      id:
+        type: string
+      product_id:
+        type: string
+      quantity_change:
+        type: integer
     type: object
   proto.KeyValuePair:
     properties:
@@ -771,6 +801,82 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: Update a product
+      tags:
+      - Products
+  /api/v1/admin/products/{id}/logs:
+    get:
+      consumes:
+      - application/json
+      description: Fetches inventory logs for a specific product
+      parameters:
+      - description: Bearer token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Product ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Page number
+        in: query
+        name: page
+        type: integer
+      - description: Number of items per page
+        in: query
+        name: limit
+        type: integer
+      - description: Sort by column
+        in: query
+        name: sort_by
+        type: string
+      - description: Sort order (asc/desc)
+        in: query
+        name: sort_order
+        type: string
+      - description: Filter column
+        in: query
+        name: filter_column
+        type: string
+      - description: Filter operator
+        in: query
+        name: filter_operator
+        type: string
+      - description: Filter value
+        in: query
+        name: filter_value
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/proto.GetInventoryLogsResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Get inventory logs
       tags:
       - Products
   /api/v1/admin/products/{id}/stock:
