@@ -231,6 +231,7 @@ func GetProduct(productClient grpc.ProductClient) gin.HandlerFunc {
 // @Router /api/v1/products [get]
 func GetProducts(productClient grpc.ProductClient) gin.HandlerFunc {
 	return func(c *gin.Context) {
+		search := c.Query("search")
 		sortBy := c.Query("sort_by")
 		sortOrder := c.Query("sort_order")
 		page := utils.GetIntQueryParam(c, "page", 1)
@@ -250,6 +251,7 @@ func GetProducts(productClient grpc.ProductClient) gin.HandlerFunc {
 		}
 
 		resp, err := productClient.ListProducts(context.Background(), &proto.ListProductsRequest{
+			Search:    search,
 			Filter:    filter,
 			SortBy:    sortBy,
 			SortOrder: sortOrder,
