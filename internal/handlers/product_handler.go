@@ -18,7 +18,7 @@ type ProductRequest struct {
 	Name                 string  `json:"name" form:"name" binding:"required" example:"Paracetamol"`
 	Description          string  `json:"description" form:"description" binding:"required" example:"Pain relief medication"`
 	Price                float64 `json:"price" form:"price" binding:"required,gt=0" example:"9.99"`
-	Stock                int32   `json:"stock" form:"stock" binding:"required,gte=0" example:"100"`
+	Stock                int32   `json:"stock" form:"stock" binding:"required,gt=0" example:"100"`
 	RequiresPrescription bool    `json:"requires_prescription" form:"requires_prescription" example:"true"`
 }
 
@@ -34,13 +34,9 @@ type Product struct {
 	Image *multipart.FileHeader `form:"image" swaggerignore:"true"`
 }
 
-type SwaggerProduct struct {
-	Name                 string  `json:"name" example:"Paracetamol"`
-	Description          string  `json:"description" example:"Pain relief medication"`
-	Price                float64 `json:"price" example:"9.99"`
-	Stock                int32   `json:"stock" example:"100"`
-	RequiresPrescription bool    `json:"requires_prescription" example:"true"`
-	Image                string  `json:"image" format:"binary"`
+type UpdateProductReq struct {
+	ProductUpdate
+	Image *multipart.FileHeader `form:"image" swaggerignore:"true"`
 }
 
 // CreateProduct adds a new product to the inventory
@@ -307,7 +303,7 @@ func GetProducts(productClient grpc.ProductClient) gin.HandlerFunc {
 // @Security ApiKeyAuth
 // @Param Authorization header string true "Bearer token"
 // @Param id path string true "Product ID"
-// @Param request body ProductUpdate true "Product Details"
+// @Param request body UpdateProductReq true "Product Details"
 // @Success 200 {object} proto.UpdateProductResponse
 // @Failure 400 {object} utils.ErrorResponse "Bad Request"
 // @Failure 401 {object} utils.ErrorResponse "Unauthorized"
@@ -315,12 +311,12 @@ func GetProducts(productClient grpc.ProductClient) gin.HandlerFunc {
 // @Failure 404 {object} utils.ErrorResponse "Not Found"
 // @Failure 500 {object} utils.ErrorResponse "Internal Server Error"
 // @Router /api/v1/admin/products/{id} [put]
-func UpdateProduct(productClient grpc.ProductClient) gin.HandlerFunc {
+func UpdateProduct(cfg *config.Config, productClient grpc.ProductClient) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		productID := c.Param("id")
 
-		var req proto.Product
-		if err := c.ShouldBindJSON(&req); err != nil {
+		var req UpdateProductReq
+		if err := c.ShouldBind(&req); err != nil {
 			utils.Error("Failed to bind request", map[string]interface{}{
 				"error": err,
 			})
@@ -332,9 +328,49 @@ func UpdateProduct(productClient grpc.ProductClient) gin.HandlerFunc {
 			return
 		}
 
+		var imageURL string
+
+		if req.Image.Filename != "" {
+			// Validate file type
+			allowedExtensions := map[string]bool{".jpg": true, ".jpeg": true, ".png": true, ".pdf": true}
+			ext := filepath.Ext(req.Image.Filename)
+			if !allowedExtensions[ext] {
+				utils.Error("Invalid file format", map[string]interface{}{
+					"extension": ext,
+				})
+				c.JSON(http.StatusBadRequest, utils.ErrorResponse{
+					Type:    "VALIDATION_ERROR",
+					Message: "Invalid file format",
+					Details: map[string]string{"format": "Only JPG, JPEG, and PNG files are allowed"},
+				})
+				return
+			}
+
+			// Upload image to S3
+			imageURLResp, err := utils.UploadImageToS3(c, cfg, "products", req.Image)
+			if err != nil {
+				utils.Error("Failed to upload image to S3", map[string]interface{}{
+					"error": err,
+				})
+				c.JSON(http.StatusInternalServerError, utils.ErrorResponse{
+					Type:    "INTERNAL_ERROR",
+					Message: "Failed to upload image",
+					Details: map[string]string{"error": err.Error()},
+				})
+				return
+			}
+			imageURL = imageURLResp
+		}
+
 		resp, err := productClient.UpdateProduct(context.Background(), &proto.UpdateProductRequest{
 			ProductId: productID,
-			Product:   &req,
+			Product: &proto.Product{
+				Name:                 req.Name,
+				Description:          req.Description,
+				Price:                req.Price,
+				RequiresPrescription: req.RequiresPrescription,
+				ImageUrl:             imageURL,
+			},
 		})
 		if err != nil {
 			utils.Error("Failed to update product", map[string]interface{}{

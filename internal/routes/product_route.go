@@ -17,7 +17,7 @@ func RegisterProductRoutes(r *gin.RouterGroup, cfg *config.Config, authClient gr
 	admin.Use(middleware.RBACMiddleware("admin"))
 	{
 		admin.POST("/products", handlers.CreateProduct(cfg, productClient))
-		admin.PUT("/products/:id", handlers.UpdateProduct(productClient))
+		admin.PUT("/products/:id", handlers.UpdateProduct(cfg, productClient))
 		admin.DELETE("/products/:id", handlers.DeleteProduct(productClient))
 		admin.PUT("/products/:id/stock", handlers.UpdateStock(productClient))
 		admin.GET("/products/:id/logs", handlers.GetInventoryLogs(productClient))

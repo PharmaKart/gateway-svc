@@ -36,25 +36,6 @@ definitions:
       status:
         type: string
     type: object
-  handlers.ProductUpdate:
-    properties:
-      description:
-        example: Pain relief medication
-        type: string
-      name:
-        example: Paracetamol
-        type: string
-      price:
-        example: 9.99
-        type: number
-      requires_prescription:
-        example: true
-        type: boolean
-    required:
-    - description
-    - name
-    - price
-    type: object
   handlers.RegisterRequest:
     properties:
       city:
@@ -109,6 +90,25 @@ definitions:
     required:
     - quantity_change
     - reason
+    type: object
+  handlers.UpdateProductReq:
+    properties:
+      description:
+        example: Pain relief medication
+        type: string
+      name:
+        example: Paracetamol
+        type: string
+      price:
+        example: 9.99
+        type: number
+      requires_prescription:
+        example: true
+        type: boolean
+    required:
+    - description
+    - name
+    - price
     type: object
   proto.CreateProductResponse:
     properties:
@@ -770,7 +770,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/handlers.ProductUpdate'
+          $ref: '#/definitions/handlers.UpdateProductReq'
       produces:
       - application/json
       responses:

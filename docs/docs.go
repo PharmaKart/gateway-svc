@@ -347,7 +347,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/handlers.ProductUpdate"
+                            "$ref": "#/definitions/handlers.UpdateProductReq"
                         }
                     }
                 ],
@@ -1923,32 +1923,6 @@ const docTemplate = `{
                 }
             }
         },
-        "handlers.ProductUpdate": {
-            "type": "object",
-            "required": [
-                "description",
-                "name",
-                "price"
-            ],
-            "properties": {
-                "description": {
-                    "type": "string",
-                    "example": "Pain relief medication"
-                },
-                "name": {
-                    "type": "string",
-                    "example": "Paracetamol"
-                },
-                "price": {
-                    "type": "number",
-                    "example": 9.99
-                },
-                "requires_prescription": {
-                    "type": "boolean",
-                    "example": true
-                }
-            }
-        },
         "handlers.RegisterRequest": {
             "type": "object",
             "properties": {
@@ -2028,6 +2002,32 @@ const docTemplate = `{
                 },
                 "reason": {
                     "type": "string"
+                }
+            }
+        },
+        "handlers.UpdateProductReq": {
+            "type": "object",
+            "required": [
+                "description",
+                "name",
+                "price"
+            ],
+            "properties": {
+                "description": {
+                    "type": "string",
+                    "example": "Pain relief medication"
+                },
+                "name": {
+                    "type": "string",
+                    "example": "Paracetamol"
+                },
+                "price": {
+                    "type": "number",
+                    "example": 9.99
+                },
+                "requires_prescription": {
+                    "type": "boolean",
+                    "example": true
                 }
             }
         },
