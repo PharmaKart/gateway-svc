@@ -53,9 +53,10 @@ func UploadImageToS3(c *gin.Context, cfg *config.Config, bucketFolder string, fi
 	s3Service := s3.New(sess)
 
 	_, err = s3Service.PutObject(&s3.PutObjectInput{
-		Bucket: aws.String(bucket),
-		Key:    aws.String(fileName),
-		Body:   src,
+		Bucket:      aws.String(bucket),
+		Key:         aws.String(fileName),
+		Body:        src,
+		ContentType: aws.String(file.Header.Get("Content-Type")),
 	})
 	if err != nil {
 		return "", err
