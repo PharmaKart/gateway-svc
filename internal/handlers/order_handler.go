@@ -14,9 +14,9 @@ import (
 )
 
 type OrderItem struct {
-	ProductID   string `json:"product_id" form:"product_id"`
-	ProductName string `json:"product_name" form:"product_name"`
-	Quantity    int    `json:"quantity" form:"quantity"`
+	ProductID   string `json:"product_id" form:"product_id" binding:"required"`
+	ProductName string `json:"product_name" form:"product_name" binding:"required"`
+	Quantity    int    `json:"quantity" form:"quantity" binding:"required"`
 }
 
 type OrderRequest struct {
@@ -60,11 +60,28 @@ type SwaggerOrderRequest struct {
 // @Router /api/v1/orders [post]
 func PlaceOrder(cfg *config.Config, orderClient grpc.OrderClient) gin.HandlerFunc {
 	return func(c *gin.Context) {
+		userRole, ok := c.Get("user_role")
+		if !ok {
+			c.JSON(http.StatusUnauthorized, utils.ErrorResponse{
+				Type:    "AUTH_ERROR",
+				Message: "User Role not found in token",
+			})
+			return
+		}
+
 		customerID, ok := c.Get("user_id")
 		if !ok {
 			c.JSON(http.StatusUnauthorized, utils.ErrorResponse{
 				Type:    "AUTH_ERROR",
 				Message: "User ID not found in token",
+			})
+			return
+		}
+
+		if userRole == "admin" {
+			c.JSON(http.StatusForbidden, utils.ErrorResponse{
+				Type:    "AUTH_ERROR",
+				Message: "Admins cannot place orders",
 			})
 			return
 		}
@@ -186,6 +203,90 @@ func PlaceOrder(cfg *config.Config, orderClient grpc.OrderClient) gin.HandlerFun
 	}
 }
 
+// GenerateNewPaymentUrl generates a new payment URL for an order
+// @Summary Generate a new payment URL
+// @Description Generates a new payment URL for an order
+// @Tags Orders
+// @Accept json
+// @Produce json
+// @Security ApiKeyAuth
+// @Param Authorization header string true "Bearer token"
+// @Param id path string true "Order ID"
+// @Success 200 {object} proto.GeneratePaymentURLResponse
+// @Failure 400 {object} ErrorResponse
+// @Failure 401 {object} ErrorResponse
+// @Failure 404 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
+// @Router /api/v1/orders/{id}/payment [post]
+func GenerateNewPaymentUrl(orderClient grpc.OrderClient) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		userRole, ok := c.Get("user_role")
+		var customerID string
+		if !ok {
+			c.JSON(http.StatusUnauthorized, utils.ErrorResponse{
+				Type:    "AUTH_ERROR",
+				Message: "User Role not found in token",
+			})
+			return
+		}
+
+		userId, ok := c.Get("user_id")
+		if !ok {
+			c.JSON(http.StatusUnauthorized, utils.ErrorResponse{
+				Type:    "AUTH_ERROR",
+				Message: "User ID not found in token",
+			})
+			return
+		}
+
+		customerID = userId.(string)
+		if userRole == "admin" {
+			c.JSON(http.StatusForbidden, utils.ErrorResponse{
+				Type:    "AUTH_ERROR",
+				Message: "Admins cannot generate payment URLs for customers",
+			})
+			return
+		}
+
+		orderID := c.Param("id")
+
+		resp, err := orderClient.GenerateNewPaymentUrl(c.Request.Context(), &proto.GenerateNewPaymentUrlRequest{
+			OrderId:    orderID,
+			CustomerId: customerID,
+		})
+		if err != nil {
+			utils.Error("Failed to generate payment URL", map[string]interface{}{
+				"error": err,
+			})
+			c.JSON(http.StatusInternalServerError, utils.ErrorResponse{
+				Type:    "INTERNAL_ERROR",
+				Message: "Failed to generate payment URL",
+			})
+			return
+		}
+
+		if !resp.Success {
+			utils.Error("Failed to generate payment URL", map[string]interface{}{
+				"error": resp,
+			})
+
+			if resp.Error != nil {
+				errorResp, statusCode := utils.ConvertProtoErrorToResponse(resp.Error)
+				c.JSON(statusCode, errorResp)
+				return
+			}
+
+			c.JSON(http.StatusBadRequest, utils.ErrorResponse{
+				Type:    "UNKNOWN_ERROR",
+				Message: "Failed to generate payment URL",
+			})
+			return
+		}
+
+		c.JSON(http.StatusOK, resp)
+	}
+}
+
 // GetOrder retrieves an order by ID
 // @Summary Get an order
 // @Description Retrieves an order by ID
@@ -201,7 +302,7 @@ func PlaceOrder(cfg *config.Config, orderClient grpc.OrderClient) gin.HandlerFun
 // @Failure 404 {object} ErrorResponse
 // @Failure 500 {object} ErrorResponse
 // @Router /api/v1/orders/{id} [get]
-func GetOrder(orderClient grpc.OrderClient) gin.HandlerFunc {
+func GetOrder(orderClient grpc.OrderClient, paymentClient grpc.PaymentClient) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		userRole, ok := c.Get("user_role")
 		var customerID string
@@ -229,7 +330,7 @@ func GetOrder(orderClient grpc.OrderClient) gin.HandlerFunc {
 
 		orderID := c.Param("id")
 
-		resp, err := orderClient.GetOrder(c.Request.Context(), &proto.GetOrderRequest{
+		orderResp, err := orderClient.GetOrder(c.Request.Context(), &proto.GetOrderRequest{
 			OrderId:    orderID,
 			CustomerId: customerID,
 		})
@@ -245,13 +346,13 @@ func GetOrder(orderClient grpc.OrderClient) gin.HandlerFunc {
 		}
 
 		// Check if the response indicates a failure
-		if !resp.Success {
+		if !orderResp.Success {
 			utils.Error("Failed to get order", map[string]interface{}{
-				"error": resp,
+				"error": orderResp,
 			})
 
-			if resp.Error != nil {
-				errorResp, statusCode := utils.ConvertProtoErrorToResponse(resp.Error)
+			if orderResp.Error != nil {
+				errorResp, statusCode := utils.ConvertProtoErrorToResponse(orderResp.Error)
 				c.JSON(statusCode, errorResp)
 				return
 			}
@@ -263,8 +364,29 @@ func GetOrder(orderClient grpc.OrderClient) gin.HandlerFunc {
 			})
 			return
 		}
+		orderData, err := json.Marshal(orderResp)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to marshal order data"})
+			return
+		}
 
-		c.JSON(http.StatusOK, resp)
+		var response map[string]interface{}
+		if err := json.Unmarshal(orderData, &response); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to unmarshal order data"})
+			return
+		}
+
+		// Append the payment status
+		paymentResp, err := paymentClient.GetPaymentByOrderID(c.Request.Context(), &proto.GetPaymentByOrderIDRequest{
+			OrderId:    orderID,
+			CustomerId: customerID,
+		})
+
+		if err == nil && paymentResp.Success {
+			response["payment_status"] = paymentResp.Status
+		}
+
+		c.JSON(http.StatusOK, response)
 	}
 }
 

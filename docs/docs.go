@@ -1048,6 +1048,74 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/orders/{id}/payment": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Generates a new payment URL for an order",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Orders"
+                ],
+                "summary": "Generate a new payment URL",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Bearer token",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Order ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/proto.GeneratePaymentURLResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/payments/order/{id}": {
             "get": {
                 "security": [
@@ -2108,6 +2176,23 @@ const docTemplate = `{
                 }
             }
         },
+        "proto.GeneratePaymentURLResponse": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "$ref": "#/definitions/proto.Error"
+                },
+                "payment_id": {
+                    "type": "string"
+                },
+                "success": {
+                    "type": "boolean"
+                },
+                "url": {
+                    "type": "string"
+                }
+            }
+        },
         "proto.GetInventoryLogsResponse": {
             "type": "object",
             "properties": {
@@ -2137,6 +2222,9 @@ const docTemplate = `{
         "proto.GetOrderResponse": {
             "type": "object",
             "properties": {
+                "created_at": {
+                    "type": "integer"
+                },
                 "customer_id": {
                     "type": "string"
                 },
@@ -2155,11 +2243,20 @@ const docTemplate = `{
                 "prescription_url": {
                     "type": "string"
                 },
+                "shipping_cost": {
+                    "type": "number"
+                },
                 "status": {
                     "type": "string"
                 },
+                "subtotal": {
+                    "type": "number"
+                },
                 "success": {
                     "type": "boolean"
+                },
+                "updated_at": {
+                    "type": "integer"
                 }
             }
         },
@@ -2397,6 +2494,9 @@ const docTemplate = `{
         "proto.Order": {
             "type": "object",
             "properties": {
+                "created_at": {
+                    "type": "integer"
+                },
                 "customer_id": {
                     "type": "string"
                 },
@@ -2412,8 +2512,17 @@ const docTemplate = `{
                 "prescription_url": {
                     "type": "string"
                 },
+                "shipping_cost": {
+                    "type": "number"
+                },
                 "status": {
                     "type": "string"
+                },
+                "subtotal": {
+                    "type": "number"
+                },
+                "updated_at": {
+                    "type": "integer"
                 }
             }
         },

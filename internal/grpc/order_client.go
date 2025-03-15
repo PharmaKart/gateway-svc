@@ -13,6 +13,7 @@ type OrderClient interface {
 	ListCustomersOrders(ctx context.Context, req *proto.ListCustomersOrdersRequest) (*proto.ListCustomersOrdersResponse, error)
 	ListAllOrders(ctx context.Context, req *proto.ListAllOrdersRequest) (*proto.ListAllOrdersResponse, error)
 	UpdateOrderStatus(ctx context.Context, req *proto.UpdateOrderStatusRequest) (*proto.UpdateOrderStatusResponse, error)
+	GenerateNewPaymentUrl(ctx context.Context, req *proto.GenerateNewPaymentUrlRequest) (*proto.GenerateNewPaymentUrlResponse, error)
 }
 
 type orderClient struct {
@@ -27,6 +28,10 @@ func NewOrderServiceClient(conn *grpc.ClientConn) OrderClient {
 
 func (c *orderClient) PlaceOrder(ctx context.Context, req *proto.PlaceOrderRequest) (*proto.PlaceOrderResponse, error) {
 	return c.client.PlaceOrder(ctx, req)
+}
+
+func (c *orderClient) GenerateNewPaymentUrl(ctx context.Context, req *proto.GenerateNewPaymentUrlRequest) (*proto.GenerateNewPaymentUrlResponse, error) {
+	return c.client.GenerateNewPaymentUrl(ctx, req)
 }
 
 func (c *orderClient) GetOrder(ctx context.Context, req *proto.GetOrderRequest) (*proto.GetOrderResponse, error) {
