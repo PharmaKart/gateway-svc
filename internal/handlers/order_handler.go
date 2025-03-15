@@ -384,6 +384,7 @@ func GetOrder(orderClient grpc.OrderClient, paymentClient grpc.PaymentClient) gi
 
 		if err == nil && paymentResp.Success {
 			response["payment_status"] = paymentResp.Status
+			response["transaction_id"] = paymentResp.TransactionId
 		}
 
 		c.JSON(http.StatusOK, response)
