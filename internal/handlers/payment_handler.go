@@ -134,6 +134,9 @@ func handleAsyncPaymentSucceeded(event stripe.Event) *string {
 }
 
 func handleCheckoutSessionCompleted(event stripe.Event, paymentClient grpc.PaymentClient) {
+	utils.Info("Handling checkout session completed event", map[string]interface{}{
+		"event": event.ID,
+	})
 	metadata := event.Data.Object["metadata"].(map[string]interface{})
 
 	// Extract individual fields safely
@@ -189,10 +192,6 @@ func handleCheckoutSessionCompleted(event stripe.Event, paymentClient grpc.Payme
 		})
 		return
 	}
-
-	utils.Info("Handling checkout session completed event", map[string]interface{}{
-		"event": event.ID,
-	})
 }
 
 func handleCheckoutSessionExpired(event stripe.Event, paymentClient grpc.PaymentClient) {

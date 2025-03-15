@@ -27,7 +27,7 @@ func RegisterRoutes(r *gin.Engine, cfg *config.Config, authClient grpc.AuthClien
 	RegisterProductRoutes(api, cfg, authClient, productClient)
 
 	// Register order routes
-	RegisterOrderRoutes(api, cfg, authClient, orderClient)
+	RegisterOrderRoutes(api, cfg, authClient, orderClient, paymentClient)
 
 	// Register payment routes
 	RegisterPaymentRoutes(api, cfg, authClient, paymentClient)
